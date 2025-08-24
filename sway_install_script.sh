@@ -83,14 +83,16 @@ sudo pacman -S --noconfirm \
     brightnessctl \
     playerctl \
     pavucontrol \
-    NetworkManager \
+    networkmanager \
     network-manager-applet \
     bluez \
     bluez-utils \
     blueman \
-    pulseaudio \
-    pulseaudio-alsa \
-    pulseaudio-bluetooth
+    pipewire \
+    pipewire-alsa \
+    pipewire-pulse \
+    pipewire-jack \
+    wireplumber
 
 # Install fonts including nerd fonts from official repos
 print_status "Installing fonts..."
@@ -833,6 +835,12 @@ sudo systemctl start bluetooth
 sudo systemctl enable sddm
 print_warning "SDDM will be enabled but not started until next boot"
 
+# Enable PipeWire services for current user
+print_status "Enabling PipeWire audio services..."
+systemctl --user enable pipewire.service
+systemctl --user enable pipewire-pulse.service
+systemctl --user enable wireplumber.service
+
 # Add user to necessary groups
 print_status "Adding user to necessary groups..."
 sudo usermod -aG video,audio,input "$USER"
@@ -884,6 +892,7 @@ echo "  • Brave browser"
 echo "  • Wofi application launcher (Dracula theme)"
 echo "  • Mako notification daemon (Dracula theme)"
 echo "  • GTK applications themed with Dracula"
+echo "  • PipeWire audio system (modern replacement for PulseAudio)"
 echo "  • Paru AUR helper installed"
 echo "  • Nerd Fonts with icon support"
 echo "  • Screenshot tools (grim + slurp)"
