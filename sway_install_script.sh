@@ -54,6 +54,7 @@ sudo pacman -S --noconfirm \
     git \
     wget \
     curl \
+    openssh \
     unzip
 
 # Install and configure display manager (SDDM)
@@ -74,7 +75,7 @@ sudo pacman -S --noconfirm \
 
 # Install essential utilities
 print_status "Installing essential utilities..."
-sudo pacman -S --noconfirm \
+sudo pacman -S --noconfirm --needed \
     kitty \
     thunar \
     grim \
@@ -96,7 +97,7 @@ sudo pacman -S --noconfirm \
 
 # Install fonts including nerd fonts from official repos
 print_status "Installing fonts..."
-sudo pacman -S --noconfirm \
+sudo pacman -S --noconfirm --needed \
     ttf-dejavu \
     ttf-liberation \
     noto-fonts \
@@ -108,18 +109,22 @@ sudo pacman -S --noconfirm \
 
 # Install optional but useful packages
 print_status "Installing additional useful packages..."
-sudo pacman -S --noconfirm \
-    neofetch \
+sudo pacman -S --noconfirm --needed \
     htop \
     ranger \
-    vim \
-    nano \
+    helix \
+    micro \
     tree \
     man-db \
     man-pages \
     gtk3 \
     qt5ct \
-    lxappearance
+    lxappearance \
+    iwd \
+    wireless_tools \
+    wpa_supplicant \
+    smartmontools \
+    xdg-utils
 
 # Install paru AUR helper
 print_status "Installing paru AUR helper..."
@@ -136,17 +141,17 @@ fi
 
 # Install Brave browser from AUR using paru
 print_status "Installing Brave browser from AUR..."
-paru -S --noconfirm brave-bin
+paru -S --noconfirm --needed brave-bin
 
 # Install additional nerd fonts from AUR
 print_status "Installing additional nerd fonts from AUR..."
-paru -S --noconfirm \
+paru -S --noconfirm --needed \
     ttf-meslo-nerd-font-powerlevel10k \
     nerd-fonts-hack
 
 # Install Dracula theme components from AUR
 print_status "Installing Dracula theme components..."
-paru -S --noconfirm \
+paru -S --noconfirm --needed \
     dracula-gtk-theme \
     dracula-icons-git
 
