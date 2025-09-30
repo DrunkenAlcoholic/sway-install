@@ -141,17 +141,17 @@ fi
 
 # Install Brave browser from AUR using paru
 print_status "Installing Brave browser from AUR..."
-paru -S --noconfirm --needed brave-bin
+paru -S --noconfirm --needed --skipreview brave-bin
 
 # Install additional nerd fonts from AUR
 print_status "Installing additional nerd fonts from AUR..."
-paru -S --noconfirm --needed \
+paru -S --noconfirm --needed --skipreview \
     ttf-meslo-nerd-font-powerlevel10k \
     nerd-fonts-hack
 
 # Install Dracula theme components from AUR
 print_status "Installing Dracula theme components..."
-paru -S --noconfirm --needed \
+paru -S --noconfirm --needed --skipreview \
     dracula-gtk-theme \
     dracula-icons-git
 
@@ -377,8 +377,6 @@ cat > ~/.config/waybar/config << 'EOF'
     },
     
     "temperature": {
-        "thermal-zone": 2,
-        "hwmon-path": "/sys/class/hwmon/hwmon2/temp1_input",
         "critical-threshold": 80,
         "format-critical": "{temperatureC}°C ",
         "format": "{temperatureC}°C ",
@@ -690,8 +688,6 @@ mouse_hide_wait 3.0
 url_style curly
 
 # Advanced
-shell .
-editor .
 close_on_child_death no
 allow_remote_control no
 update_check_interval 24
@@ -850,27 +846,24 @@ systemctl --user enable wireplumber.service
 print_status "Adding user to necessary groups..."
 sudo usermod -aG video,audio,input "$USER"
 
-# Create desktop entry for Sway
-print_status "Creating desktop entry for Sway..."
-sudo tee /usr/share/wayland-sessions/sway.desktop > /dev/null << 'EOF'
+# Ensure desktop entry for Sway exists
+print_status "Ensuring desktop entry for Sway..."
+if [[ -f /usr/share/wayland-sessions/sway.desktop ]]; then
+    print_status "Desktop entry already present; leaving existing file untouched."
+else
+    print_warning "Sway desktop entry missing, creating a minimal entry."
+    sudo tee /usr/share/wayland-sessions/sway.desktop > /dev/null << 'EOF'
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland compositor
 Exec=sway
+TryExec=sway
 Type=Application
 EOF
+fi
 
 # Configure SDDM for better Wayland support
-print_status "Configuring SDDM..."
-sudo mkdir -p /etc/sddm.conf.d
-sudo tee /etc/sddm.conf.d/10-wayland.conf > /dev/null << 'EOF'
-[General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
-
-[Wayland]
-CompositorCommand=sway
-EOF
+print_status "SDDM remains on its default configuration; adjust /etc/sddm.conf.d manually if you require Wayland-specific tweaks."
 
 # Update font cache
 print_status "Updating font cache..."
@@ -878,13 +871,19 @@ fc-cache -fv
 
 # Set environment variables for consistent theming
 print_status "Setting up environment variables for theming..."
-cat > ~/.profile << 'EOF'
-# Environment variables for consistent theming
-export GTK_THEME=Dracula
-export QT_QPA_PLATFORMTHEME=qt5ct
-export QT_STYLE_OVERRIDE=kvantum
-export XCURSOR_THEME=Adwaita
-EOF
+PROFILE_FILE="$HOME/.profile"
+touch "$PROFILE_FILE"
+if ! grep -q "Sway install script theme exports" "$PROFILE_FILE"; then
+    {
+        echo ""
+        echo "# Sway install script theme exports"
+        echo "export GTK_THEME=Dracula"
+        echo "export QT_QPA_PLATFORMTHEME=qt5ct"
+        echo "export XCURSOR_THEME=Adwaita"
+    } >> "$PROFILE_FILE"
+else
+    print_warning "Theme-related environment variables already present in ~/.profile, skipping..."
+fi
 
 # Final message
 print_success "Sway installation and configuration complete!"
