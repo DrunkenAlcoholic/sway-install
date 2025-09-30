@@ -37,7 +37,7 @@ fi
 
 # Check if running on Arch Linux
 if ! command -v pacman &> /dev/null; then
-    print_error "This script is designed for Arch Linux systems with pacman package manager."
+    print_error "This script is designed for ArchLinux systems with pacman package manager."
     exit 1
 fi
 
@@ -69,7 +69,6 @@ sudo pacman -S --noconfirm \
     swayidle \
     swaybg \
     waybar \
-    wofi \
     wl-clipboard \
     xorg-xwayland
 
@@ -78,6 +77,7 @@ print_status "Installing essential utilities..."
 sudo pacman -S --noconfirm --needed \
     kitty \
     thunar \
+    thunar-volman \
     grim \
     slurp \
     mako \
@@ -89,6 +89,11 @@ sudo pacman -S --noconfirm --needed \
     bluez \
     bluez-utils \
     blueman \
+    udisks2 \
+    gvfs \
+    gvfs-mtp \
+    gvfs-gphoto2 \
+    gvfs-afc \
     pipewire \
     pipewire-alsa \
     pipewire-pulse \
@@ -126,6 +131,22 @@ sudo pacman -S --noconfirm --needed \
     smartmontools \
     xdg-utils
 
+# Detect VirtualBox environment and install guest utilities if needed
+print_status "Checking for VirtualBox environment..."
+if systemd-detect-virt --quiet --vm; then
+    virt_type="$(systemd-detect-virt)"
+    if [[ "$virt_type" == "oracle" ]]; then
+        print_status "VirtualBox detected; installing guest utilities..."
+        sudo pacman -S --noconfirm --needed virtualbox-guest-utils
+        print_status "Enabling VirtualBox guest service..."
+        sudo systemctl enable --now vboxservice
+    else
+        print_warning "Virtualization detected ($virt_type) but not VirtualBox; skipping VirtualBox guest utilities."
+    fi
+else
+    print_status "No virtualization detected; skipping VirtualBox guest utilities installation."
+fi
+
 # Install paru AUR helper
 print_status "Installing paru AUR helper..."
 if ! command -v paru &> /dev/null; then
@@ -143,11 +164,6 @@ fi
 print_status "Installing Brave browser from AUR..."
 paru -S --noconfirm --needed --skipreview brave-bin
 
-# Install additional nerd fonts from AUR
-print_status "Installing additional nerd fonts from AUR..."
-paru -S --noconfirm --needed --skipreview \
-    ttf-meslo-nerd-font-powerlevel10k \
-    nerd-fonts-hack
 
 # Install Dracula theme components from AUR
 print_status "Installing Dracula theme components..."
@@ -155,9 +171,36 @@ paru -S --noconfirm --needed --skipreview \
     dracula-gtk-theme \
     dracula-icons-git
 
+# Install NimLaunch application launcher
+print_status "Installing NimLaunch application launcher..."
+NIMLAUNCH_TMP_DIR="$(mktemp -d)"
+if git clone https://github.com/DrunkenAlcoholic/NimLaunch.git "$NIMLAUNCH_TMP_DIR"; then
+    install -Dm755 "$NIMLAUNCH_TMP_DIR/bin/nimlaunch" "$HOME/.local/bin/nimlaunch"
+    rm -rf "$NIMLAUNCH_TMP_DIR"
+else
+    print_error "Failed to clone NimLaunch repository."
+    rm -rf "$NIMLAUNCH_TMP_DIR"
+    exit 1
+fi
+
+# Install Nymph fetch utility
+print_status "Installing Nymph fetch utility..."
+NYMPH_TMP_DIR="$(mktemp -d)"
+if git clone https://github.com/DrunkenAlcoholic/Nymph.git "$NYMPH_TMP_DIR"; then
+    mkdir -p "$HOME/.local/bin"
+    install -Dm755 "$NYMPH_TMP_DIR/bin/nymph" "$HOME/.local/bin/nymph"
+    rm -rf "$HOME/.local/bin/logos"
+    cp -r "$NYMPH_TMP_DIR/bin/logos" "$HOME/.local/bin/"
+    rm -rf "$NYMPH_TMP_DIR"
+else
+    print_error "Failed to clone Nymph repository."
+    rm -rf "$NYMPH_TMP_DIR"
+    exit 1
+fi
+
 # Create necessary directories
 print_status "Creating configuration directories..."
-mkdir -p ~/.config/{sway,waybar,kitty,mako,gtk-3.0,wofi}
+mkdir -p ~/.config/{sway,waybar,kitty,mako,gtk-3.0}
 mkdir -p ~/.themes ~/.icons
 
 # Create basic Sway configuration
@@ -177,7 +220,7 @@ set $right l
 # Your preferred terminal emulator
 set $term kitty
 # Your preferred application launcher
-set $menu wofi --show drun
+set $menu ~/.local/bin/nimlaunch
 
 ### Output configuration
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
@@ -263,9 +306,9 @@ bindsym $mod+Shift+8 move container to workspace number 8
 bindsym $mod+Shift+9 move container to workspace number 9
 bindsym $mod+Shift+0 move container to workspace number 10
 
-# Layout stuff:
-bindsym $mod+h splith
-bindsym $mod+v splitv
+# Layout stuff (use Ctrl with H/V to avoid conflicting with navigation/move bindings):
+bindsym $mod+Ctrl+h splith
+bindsym $mod+Ctrl+v splitv
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
 bindsym $mod+e layout toggle split
@@ -311,7 +354,7 @@ bindsym Print exec grim ~/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png
 bindsym $mod+Print exec grim -g "$(slurp)" ~/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png
 
 # Lock screen
-bindsym $mod+l exec swaylock
+bindsym $mod+i exec swaylock
 
 # File manager
 bindsym $mod+n exec thunar
@@ -328,9 +371,40 @@ exec blueman-applet
 
 # Idle configuration
 exec swayidle -w \
-         timeout 300 'swaylock -f -c 000000' \
+         timeout 300 'swaylock -f' \
          timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
-         before-sleep 'swaylock -f -c 000000'
+         before-sleep 'swaylock -f'
+EOF
+
+# Create swaylock configuration with Dracula theme
+print_status "Creating swaylock configuration with Dracula theme..."
+cat > ~/.config/swaylock/config << 'EOF'
+color=#282a36
+inside-color=#282a36
+inside-clear-color=#282a36
+inside-ver-color=#282a36
+inside-wrong-color=#ff5555
+
+ring-color=#6272a4
+ring-clear-color=#50fa7b
+ring-ver-color=#bd93f9
+ring-wrong-color=#ff5555
+
+line-color=#44475a
+line-clear-color=#50fa7b
+line-ver-color=#bd93f9
+line-wrong-color=#ff5555
+
+separator-color=#282a36
+text-color=#f8f8f2
+text-clear-color=#f8f8f2
+text-ver-color=#f8f8f2
+text-wrong-color=#f8f8f2
+
+bs-hl-color=#ff5555
+key-hl-color=#50fa7b
+
+indicator-thickness=8
 EOF
 
 # Create Waybar configuration with Dracula theme
@@ -758,75 +832,6 @@ gtk-xft-hintstyle=hintfull
 gtk-application-prefer-dark-theme=1
 EOF
 
-# Create Wofi configuration with Dracula theme
-print_status "Creating Wofi configuration with Dracula theme..."
-cat > ~/.config/wofi/config << 'EOF'
-width=600
-height=400
-location=center
-show=drun
-prompt=Apps
-filter_rate=100
-allow_markup=true
-no_actions=true
-halign=fill
-orientation=vertical
-content_halign=fill
-insensitive=true
-allow_images=true
-image_size=40
-gtk_dark=true
-EOF
-
-cat > ~/.config/wofi/style.css << 'EOF'
-/* Dracula Theme for Wofi */
-window {
-margin: 0px;
-border: 2px solid #bd93f9;
-background-color: #282a36;
-border-radius: 15px;
-}
-
-#input {
-margin: 5px;
-border: 2px solid #6272a4;
-color: #f8f8f2;
-background-color: #44475a;
-border-radius: 10px;
-}
-
-#inner-box {
-margin: 5px;
-border: none;
-background-color: #282a36;
-}
-
-#outer-box {
-margin: 5px;
-border: none;
-background-color: #282a36;
-}
-
-#scroll {
-margin: 0px;
-border: none;
-}
-
-#text {
-margin: 5px;
-border: none;
-color: #f8f8f2;
-} 
-
-#entry:selected {
-background-color: #6272a4;
-}
-
-#entry:selected #text {
-color: #f8f8f2;
-}
-EOF
-
 # Enable and start necessary services
 print_status "Enabling system services..."
 sudo systemctl enable NetworkManager
@@ -838,9 +843,13 @@ print_warning "SDDM will be enabled but not started until next boot"
 
 # Enable PipeWire services for current user
 print_status "Enabling PipeWire audio services..."
-systemctl --user enable pipewire.service
-systemctl --user enable pipewire-pulse.service
-systemctl --user enable wireplumber.service
+if systemctl --user list-unit-files >/dev/null 2>&1; then
+    systemctl --user enable pipewire.service
+    systemctl --user enable pipewire-pulse.service
+    systemctl --user enable wireplumber.service
+else
+    print_warning "systemd --user is not available in this session; skipping PipeWire user service enablement."
+fi
 
 # Add user to necessary groups
 print_status "Adding user to necessary groups..."
@@ -873,6 +882,18 @@ fc-cache -fv
 print_status "Setting up environment variables for theming..."
 PROFILE_FILE="$HOME/.profile"
 touch "$PROFILE_FILE"
+print_status "Ensuring ~/.local/bin is available on PATH..."
+LOCAL_BIN_EXPORT='export PATH="$HOME/.local/bin:$PATH"'
+if ! grep -Fxq "$LOCAL_BIN_EXPORT" "$PROFILE_FILE"; then
+    {
+        echo ""
+        echo "# Sway install script PATH update"
+        echo "$LOCAL_BIN_EXPORT"
+    } >> "$PROFILE_FILE"
+else
+    print_warning "~/.local/bin is already exported in ~/.profile, skipping..."
+fi
+
 if ! grep -q "Sway install script theme exports" "$PROFILE_FILE"; then
     {
         echo ""
@@ -885,6 +906,22 @@ else
     print_warning "Theme-related environment variables already present in ~/.profile, skipping..."
 fi
 
+# Ensure Nymph fetch runs in interactive shells
+print_status "Configuring Nymph fetch for shell sessions..."
+BASHRC_FILE="$HOME/.bashrc"
+touch "$BASHRC_FILE"
+if ! grep -q "Sway install script Nymph fetch" "$BASHRC_FILE"; then
+    {
+        echo ""
+        echo "# Sway install script Nymph fetch"
+        echo "if [[ \$- == *i* ]] && command -v nymph >/dev/null 2>&1; then"
+        echo "    nymph"
+        echo "fi"
+    } >> "$BASHRC_FILE"
+else
+    print_warning "Nymph fetch snippet already present in ~/.bashrc, skipping..."
+fi
+
 # Final message
 print_success "Sway installation and configuration complete!"
 echo
@@ -893,7 +930,9 @@ echo "  • SDDM display manager installed and enabled"
 echo "  • Sway WM with Waybar status bar (Dracula theme)"
 echo "  • Kitty terminal emulator (Dracula theme)"
 echo "  • Brave browser"
-echo "  • Wofi application launcher (Dracula theme)"
+echo "  • NimLaunch application launcher"
+echo "  • Nymph fetch utility (auto-runs in terminal)"
+echo "  • Swaylock screen locker with Dracula theme"
 echo "  • Mako notification daemon (Dracula theme)"
 echo "  • GTK applications themed with Dracula"
 echo "  • PipeWire audio system (modern replacement for PulseAudio)"
@@ -909,10 +948,10 @@ print_warning "After reboot, select 'Sway' from the session menu in SDDM."
 echo
 print_status "Basic key bindings:"
 echo "  • Super + Enter: Open terminal (Kitty)"
-echo "  • Super + D: Application launcher"
+echo "  • Super + D: NimLaunch application launcher"
 echo "  • Super + B: Open Brave browser"
 echo "  • Super + N: File manager"
-echo "  • Super + L: Lock screen"
+echo "  • Super + I: Lock screen"
 echo "  • Super + Shift + Q: Close window"
 echo "  • Super + Shift + E: Exit Sway"
 echo "  • Print: Screenshot"
