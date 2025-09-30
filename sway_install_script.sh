@@ -134,15 +134,7 @@ sudo pacman -S --noconfirm --needed \
 # Detect VirtualBox environment and install guest utilities if needed
 print_status "Checking for VirtualBox environment..."
 if systemd-detect-virt --quiet --vm; then
-    virt_type="$(systemd-detect-virt)"
-    if [[ "$virt_type" == "oracle" ]]; then
-        print_status "VirtualBox detected; installing guest utilities..."
-        sudo pacman -S --noconfirm --needed virtualbox-guest-utils
-        print_status "Enabling VirtualBox guest service..."
-        sudo systemctl enable --now vboxservice
-    else
-        print_warning "Virtualization detected ($virt_type) but not VirtualBox; skipping VirtualBox guest utilities."
-    fi
+    sudo pacman -S --noconfirm --needed open-vm-tools
 else
     print_status "No virtualization detected; skipping VirtualBox guest utilities installation."
 fi
@@ -200,7 +192,7 @@ fi
 
 # Create necessary directories
 print_status "Creating configuration directories..."
-mkdir -p ~/.config/{sway,waybar,kitty,mako,gtk-3.0}
+mkdir -p ~/.config/{sway,swaylock,waybar,kitty,mako,gtk-3.0}
 mkdir -p ~/.themes ~/.icons
 
 # Create basic Sway configuration
@@ -880,28 +872,28 @@ fc-cache -fv
 
 # Set environment variables for consistent theming
 print_status "Setting up environment variables for theming..."
-PROFILE_FILE="$HOME/.profile"
-touch "$PROFILE_FILE"
+BASHRC_FILE="$HOME/.bashrc"
+touch "$BASHRC_FILE"
 print_status "Ensuring ~/.local/bin is available on PATH..."
 LOCAL_BIN_EXPORT='export PATH="$HOME/.local/bin:$PATH"'
-if ! grep -Fxq "$LOCAL_BIN_EXPORT" "$PROFILE_FILE"; then
+if ! grep -Fxq "$LOCAL_BIN_EXPORT" "$BASHRC_FILE"; then
     {
         echo ""
         echo "# Sway install script PATH update"
         echo "$LOCAL_BIN_EXPORT"
-    } >> "$PROFILE_FILE"
+    } >> "$BASHRC_FILE"
 else
-    print_warning "~/.local/bin is already exported in ~/.profile, skipping..."
+    print_warning "~/.local/bin is already exported in ~/.bashrc, skipping..."
 fi
 
-if ! grep -q "Sway install script theme exports" "$PROFILE_FILE"; then
+if ! grep -q "Sway install script theme exports" "$BASHRC_FILE"; then
     {
         echo ""
         echo "# Sway install script theme exports"
         echo "export GTK_THEME=Dracula"
         echo "export QT_QPA_PLATFORMTHEME=qt5ct"
         echo "export XCURSOR_THEME=Adwaita"
-    } >> "$PROFILE_FILE"
+    } >> "$BASHRC_FILE"
 else
     print_warning "Theme-related environment variables already present in ~/.profile, skipping..."
 fi
@@ -914,9 +906,7 @@ if ! grep -q "Sway install script Nymph fetch" "$BASHRC_FILE"; then
     {
         echo ""
         echo "# Sway install script Nymph fetch"
-        echo "if [[ \$- == *i* ]] && command -v nymph >/dev/null 2>&1; then"
-        echo "    nymph"
-        echo "fi"
+        echo "nymph"
     } >> "$BASHRC_FILE"
 else
     print_warning "Nymph fetch snippet already present in ~/.bashrc, skipping..."
