@@ -3,7 +3,8 @@
 # Sway WM Installation Script for Minimal Arch Linux
 # This script installs and configures a complete Sway desktop environment
 
-set -e  # Exit on any error
+set -euo pipefail
+IFS=$'\n\t'
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,6 +14,78 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly BASHRC_FILE="$HOME/.bashrc"
+
+install_packages() {
+    local description="$1"
+    shift
+    if [[ $# -eq 0 ]]; then
+        return
+    fi
+    print_status "$description"
+    sudo pacman -S --noconfirm --needed "$@"
+}
+
+clone_and_install_paru() {
+    local tmpdir
+    tmpdir="$(mktemp -d)"
+    print_status "Cloning paru into $tmpdir..."
+    if git clone https://aur.archlinux.org/paru.git "$tmpdir"; then
+        (cd "$tmpdir" && makepkg -si --noconfirm)
+    else
+        print_error "Failed to clone paru repository."
+        rm -rf "$tmpdir"
+        exit 1
+    fi
+    rm -rf "$tmpdir"
+}
+
+clone_to_local_bin() {
+    local repo_url="$1"
+    local target_binary="$2"
+    local post_copy_cmd="$3"
+    local tmpdir
+    tmpdir="$(mktemp -d)"
+    print_status "Cloning ${repo_url##*/} into $tmpdir..."
+    if git clone "$repo_url" "$tmpdir"; then
+        mkdir -p "$HOME/.local/bin"
+        install -Dm755 "$tmpdir/bin/$target_binary" "$HOME/.local/bin/$target_binary"
+        if [[ -n $post_copy_cmd ]]; then
+            if ! eval "$post_copy_cmd"; then
+                print_error "Post-install step for ${repo_url##*/} failed."
+                rm -rf "$tmpdir"
+                exit 1
+            fi
+        fi
+        rm -rf "$tmpdir"
+    else
+        print_error "Failed to clone ${repo_url##*/} repository."
+        rm -rf "$tmpdir"
+        exit 1
+    fi
+}
+
+ensure_block_in_bashrc() {
+    local marker="$1"
+    local block="$2"
+    local action="Appending"
+    local tmp
+
+    if grep -Fq "$marker" "$BASHRC_FILE"; then
+        action="Refreshing"
+        tmp="$(mktemp)"
+        awk -v marker="$marker" '
+            $0 == marker {skip = 1; next}
+            skip && NF == 0 {skip = 0; next}
+            skip {next}
+            {print}
+        ' "$BASHRC_FILE" > "$tmp"
+        mv "$tmp" "$BASHRC_FILE"
+    fi
+
+    printf '\n%s\n\n' "$block" >> "$BASHRC_FILE"
+    print_status "$action block '$marker' in ~/.bashrc..."
+}
 
 # Function to print colored output
 print_status() {
@@ -53,9 +126,7 @@ else
     sudo pacman -Syu --noconfirm
 fi
 
-# Install base packages needed for minimal system
-print_status "Installing base system packages..."
-sudo pacman -S --noconfirm \
+install_packages "Installing base system packages..." \
     base-devel \
     git \
     wget \
@@ -63,13 +134,13 @@ sudo pacman -S --noconfirm \
     openssh \
     unzip
 
-# Install and configure display manager (SDDM)
-print_status "Installing and configuring SDDM display manager..."
-sudo pacman -S --noconfirm sddm qt5-graphicaleffects qt5-svg qt5-quickcontrols2
+install_packages "Installing and configuring SDDM display manager..." \
+    sddm \
+    qt5-graphicaleffects \
+    qt5-svg \
+    qt5-quickcontrols2
 
-# Install Sway and core Wayland components
-print_status "Installing Sway and Wayland components..."
-sudo pacman -S --noconfirm \
+install_packages "Installing Sway and Wayland components..." \
     sway \
     swaylock \
     swayidle \
@@ -78,14 +149,13 @@ sudo pacman -S --noconfirm \
     wl-clipboard \
     xorg-xwayland
 
-# Install essential utilities
-print_status "Installing essential utilities..."
-sudo pacman -S --noconfirm --needed \
+install_packages "Installing essential utilities..." \
     kitty \
     thunar \
     thunar-volman \
     grim \
     slurp \
+    swappy \
     mako \
     brightnessctl \
     playerctl \
@@ -106,9 +176,7 @@ sudo pacman -S --noconfirm --needed \
     pipewire-jack \
     wireplumber
 
-# Install fonts including nerd fonts from official repos
-print_status "Installing fonts..."
-sudo pacman -S --noconfirm --needed \
+install_packages "Installing fonts..." \
     ttf-dejavu \
     ttf-liberation \
     noto-fonts \
@@ -118,13 +186,12 @@ sudo pacman -S --noconfirm --needed \
     ttf-jetbrains-mono-nerd \
     ttf-sourcecodepro-nerd
 
-# Install optional but useful packages
-print_status "Installing additional useful packages..."
-sudo pacman -S --noconfirm --needed \
+install_packages "Installing additional useful packages..." \
     htop \
     ranger \
     helix \
     micro \
+    rsync \
     tree \
     man-db \
     man-pages \
@@ -132,6 +199,8 @@ sudo pacman -S --noconfirm --needed \
     qt5ct \
     lxappearance \
     bibata-cursor-theme \
+    xdg-desktop-portal-wlr \
+    xdg-desktop-portal-gtk \
     iwd \
     wireless_tools \
     wpa_supplicant \
@@ -152,11 +221,13 @@ case "$virt_type" in
         sudo pacman -S --noconfirm --needed open-vm-tools
         sudo systemctl enable --now vmtoolsd.service
         ;;
+    qemu|kvm)
+        print_status "QEMU/KVM detected; installing guest agents..."
+        sudo pacman -S --noconfirm --needed qemu-guest-agent spice-vdagent
+        sudo systemctl enable --now qemu-guest-agent.service
+        ;;
     none)
         print_status "No virtualization detected; skipping guest utility installation."
-        ;;
-    qemu|kvm)
-        print_status "Virtualization detected ($virt_type); no additional guest utilities configured."
         ;;
     *)
         print_warning "Virtualization type '$virt_type' detected; no guest utilities configured for automatic installation."
@@ -166,14 +237,14 @@ esac
 # Install paru AUR helper
 print_status "Installing paru AUR helper..."
 if ! command -v paru &> /dev/null; then
-    cd /tmp
-    git clone https://aur.archlinux.org/paru.git
-    cd paru
-    makepkg -si --noconfirm
-    cd ~
-    rm -rf /tmp/paru
+    clone_and_install_paru
 else
     print_warning "paru is already installed, skipping..."
+fi
+
+if ! command -v paru &> /dev/null; then
+    print_error "paru installation failed; aborting."
+    exit 1
 fi
 
 # Install Brave browser from AUR using paru
@@ -187,67 +258,40 @@ paru -S --noconfirm --needed --skipreview \
     dracula-gtk-theme \
     dracula-icons-git
 
+print_status "Installing Dracula SDDM theme..."
+paru -S --noconfirm --needed --skipreview sddm-dracula-theme
+
+print_status "Configuring SDDM theme..."
+sudo mkdir -p /etc/sddm.conf.d
+sudo tee /etc/sddm.conf.d/10-dracula-theme.conf > /dev/null <<'EOF'
+[Theme]
+Current=Dracula
+CursorTheme=Bibata-Modern-Ice
+EOF
+
 # Install NimLaunch application launcher
 print_status "Installing NimLaunch application launcher..."
-NIMLAUNCH_TMP_DIR="$(mktemp -d)"
-if git clone https://github.com/DrunkenAlcoholic/NimLaunch.git "$NIMLAUNCH_TMP_DIR"; then
-    install -Dm755 "$NIMLAUNCH_TMP_DIR/bin/nimlaunch" "$HOME/.local/bin/nimlaunch"
-    rm -rf "$NIMLAUNCH_TMP_DIR"
-else
-    print_error "Failed to clone NimLaunch repository."
-    rm -rf "$NIMLAUNCH_TMP_DIR"
-    exit 1
-fi
+clone_to_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" "nimlaunch" ""
 
 # Install Nymph fetch utility
 print_status "Installing Nymph fetch utility..."
-NYMPH_TMP_DIR="$(mktemp -d)"
-if git clone https://github.com/DrunkenAlcoholic/Nymph.git "$NYMPH_TMP_DIR"; then
-    mkdir -p "$HOME/.local/bin"
-    install -Dm755 "$NYMPH_TMP_DIR/bin/nymph" "$HOME/.local/bin/nymph"
-    rm -rf "$HOME/.local/bin/logos"
-    cp -r "$NYMPH_TMP_DIR/bin/logos" "$HOME/.local/bin/"
-    rm -rf "$NYMPH_TMP_DIR"
-else
-    print_error "Failed to clone Nymph repository."
-    rm -rf "$NYMPH_TMP_DIR"
+clone_to_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" "nymph" \
+    "rm -rf \"$HOME/.local/bin/logos\"; cp -r \"$tmpdir/bin/logos\" \"$HOME/.local/bin/\""
+
+print_status "Preparing configuration directories..."
+mkdir -p "$HOME/.config" ~/.themes ~/.icons
+
+# Deploy repository-managed configs
+print_status "Syncing repository .config directory into ~/.config..."
+if ! command -v rsync &> /dev/null; then
+    print_error "rsync is required but not found."
     exit 1
 fi
-
-# Create necessary directories
-print_status "Creating configuration directories..."
-mkdir -p ~/.config/{sway,swaylock,waybar,kitty,mako,gtk-3.0}
-mkdir -p ~/.themes ~/.icons
-
-# Create basic Sway configuration
-print_status "Deploying Sway configuration..."
-install -Dm644 "$SCRIPT_DIR/.config/sway/config" "$HOME/.config/sway/config"
-
-# Create swaylock configuration with Dracula theme
-print_status "Deploying swaylock configuration with Dracula theme..."
-install -Dm644 "$SCRIPT_DIR/.config/swaylock/config" "$HOME/.config/swaylock/config"
-
-# Create Waybar configuration with Dracula theme
-print_status "Deploying Waybar configuration with Dracula theme..."
-install -Dm644 "$SCRIPT_DIR/.config/waybar/config" "$HOME/.config/waybar/config"
-
-install -Dm644 "$SCRIPT_DIR/.config/waybar/style.css" "$HOME/.config/waybar/style.css"
-
-# Create Kitty configuration with Dracula theme
-print_status "Deploying Kitty configuration with Dracula theme..."
-install -Dm644 "$SCRIPT_DIR/.config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
-
-# Create Mako (notification daemon) configuration with Dracula theme
-print_status "Deploying Mako configuration with Dracula theme..."
-install -Dm644 "$SCRIPT_DIR/.config/mako/config" "$HOME/.config/mako/config"
+rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
 # Create Screenshots directory
 print_status "Creating Screenshots directory..."
 mkdir -p ~/Screenshots
-
-# Create GTK theme configuration for Dracula
-print_status "Configuring GTK theme with Dracula..."
-install -Dm644 "$SCRIPT_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
 
 # Enable and start necessary services
 print_status "Enabling system services..."
@@ -289,7 +333,7 @@ EOF
 fi
 
 # Configure SDDM for better Wayland support
-print_status "SDDM remains on its default configuration; adjust /etc/sddm.conf.d manually if you require Wayland-specific tweaks."
+print_status "SDDM configured with the Dracula theme; adjust /etc/sddm.conf.d for further tweaks if needed."
 
 # Update font cache
 print_status "Updating font cache..."
@@ -297,70 +341,38 @@ fc-cache -fv
 
 # Set environment variables for consistent theming
 print_status "Setting up environment variables for theming..."
-BASHRC_FILE="$HOME/.bashrc"
 touch "$BASHRC_FILE"
-print_status "Ensuring ~/.local/bin is available on PATH..."
-LOCAL_BIN_EXPORT='export PATH="$HOME/.local/bin:$PATH"'
-if ! grep -Fxq "$LOCAL_BIN_EXPORT" "$BASHRC_FILE"; then
-    {
-        echo ""
-        echo "# Sway install script PATH update"
-        echo "$LOCAL_BIN_EXPORT"
-    } >> "$BASHRC_FILE"
-else
-    print_warning "~/.local/bin is already exported in ~/.bashrc, skipping..."
-fi
 
-if ! grep -q "Sway install script theme exports" "$BASHRC_FILE"; then
-    {
-        echo ""
-        echo "# Sway install script theme exports"
-        echo "export GTK_THEME=Dracula"
-        echo "export QT_QPA_PLATFORMTHEME=qt5ct"
-        echo "export XCURSOR_THEME=Bibata-Modern-Ice"
-        echo "export XCURSOR_SIZE=24"
-    } >> "$BASHRC_FILE"
-else
-    if grep -q 'export XCURSOR_THEME=Adwaita' "$BASHRC_FILE"; then
-        print_status "Updating existing cursor theme export in ~/.bashrc..."
-        sed -i "s/export XCURSOR_THEME=Adwaita/export XCURSOR_THEME=Bibata-Modern-Ice/" "$BASHRC_FILE"
-        if ! grep -q 'export XCURSOR_SIZE=' "$BASHRC_FILE"; then
-            sed -i "/export XCURSOR_THEME=Bibata-Modern-Ice/a export XCURSOR_SIZE=24" "$BASHRC_FILE"
-        fi
-    else
-        if ! grep -q 'export XCURSOR_SIZE=' "$BASHRC_FILE"; then
-            print_status "Adding missing cursor size export to ~/.bashrc..."
-            sed -i "/export XCURSOR_THEME=.*$/a export XCURSOR_SIZE=24" "$BASHRC_FILE"
-        fi
-        print_warning "Theme-related environment variables already present in ~/.bashrc, skipping..."
-    fi
-fi
+ensure_block_in_bashrc "# Sway install script PATH update" "$(cat <<'EOF'
+# Sway install script PATH update
+export PATH="$HOME/.local/bin:$PATH"
+EOF
+)"
+
+ensure_block_in_bashrc "# Sway install script theme exports" "$(cat <<'EOF'
+# Sway install script theme exports
+export GTK_THEME=Dracula
+export QT_QPA_PLATFORMTHEME=qt5ct
+export XCURSOR_THEME=Bibata-Modern-Ice
+export XCURSOR_SIZE=24
+EOF
+)"
 
 # Ensure Nymph fetch runs in interactive shells
 print_status "Configuring Nymph fetch for shell sessions..."
-BASHRC_FILE="$HOME/.bashrc"
-touch "$BASHRC_FILE"
-if ! grep -q "Sway install script Nymph fetch" "$BASHRC_FILE"; then
-    {
-        echo ""
-        echo "# Sway install script Nymph fetch"
-        echo "nymph"
-    } >> "$BASHRC_FILE"
-else
-    print_warning "Nymph fetch snippet already present in ~/.bashrc, skipping..."
-fi
+ensure_block_in_bashrc "# Sway install script Nymph fetch" "$(cat <<'EOF'
+# Sway install script Nymph fetch
+nymph
+EOF
+)"
 
 # Configure Helix alias
 print_status "Adding Helix alias..."
-if ! grep -Fxq "alias hx='helix'" "$BASHRC_FILE"; then
-    {
-        echo ""
-        echo "# Sway install script Helix alias"
-        echo "alias hx='helix'"
-    } >> "$BASHRC_FILE"
-else
-    print_warning "Helix alias already present in ~/.bashrc, skipping..."
-fi
+ensure_block_in_bashrc "# Sway install script Helix alias" "$(cat <<'EOF'
+# Sway install script Helix alias
+alias hx='helix'
+EOF
+)"
 
 # Final message
 print_success "Sway installation and configuration complete!"
