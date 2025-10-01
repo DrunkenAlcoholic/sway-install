@@ -170,11 +170,6 @@ install_packages "Installing essential utilities..." \
     gvfs-mtp \
     gvfs-gphoto2 \
     gvfs-afc \
-    pipewire \
-    pipewire-alsa \
-    pipewire-pulse \
-    pipewire-jack \
-    wireplumber
 
 install_packages "Installing fonts..." \
     ttf-dejavu \
@@ -198,7 +193,6 @@ install_packages "Installing additional useful packages..." \
     gtk3 \
     qt5ct \
     lxappearance \
-    bibata-cursor-theme \
     xdg-desktop-portal-wlr \
     xdg-desktop-portal-gtk \
     iwd \
@@ -258,16 +252,8 @@ paru -S --noconfirm --needed --skipreview \
     dracula-gtk-theme \
     dracula-icons-git
 
-print_status "Installing Dracula SDDM theme..."
-paru -S --noconfirm --needed --skipreview sddm-dracula-theme
-
-print_status "Configuring SDDM theme..."
-sudo mkdir -p /etc/sddm.conf.d
-sudo tee /etc/sddm.conf.d/10-dracula-theme.conf > /dev/null <<'EOF'
-[Theme]
-Current=Dracula
-CursorTheme=Bibata-Modern-Ice
-EOF
+print_status "Installing Bibata cursor theme..."
+paru -S --noconfirm --needed --skipreview bibata-cursor-theme
 
 # Install NimLaunch application launcher
 print_status "Installing NimLaunch application launcher..."
@@ -276,10 +262,19 @@ clone_to_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" "nimlaunc
 # Install Nymph fetch utility
 print_status "Installing Nymph fetch utility..."
 clone_to_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" "nymph" \
-    "rm -rf \"$HOME/.local/bin/logos\"; cp -r \"$tmpdir/bin/logos\" \"$HOME/.local/bin/\""
+    'rm -rf "$HOME/.local/bin/logos"; cp -r "$tmpdir/bin/logos" "$HOME/.local/bin/"'
 
 print_status "Preparing configuration directories..."
 mkdir -p "$HOME/.config" ~/.themes ~/.icons
+
+print_status "Setting Bibata cursor theme as default..."
+mkdir -p "$HOME/.icons/default"
+cat > "$HOME/.icons/default/index.theme" <<'EOF'
+[Icon Theme]
+Name=Default
+Comment=Default cursor theme
+Inherits=Bibata-Modern-Ice
+EOF
 
 # Deploy repository-managed configs
 print_status "Syncing repository .config directory into ~/.config..."
@@ -331,9 +326,6 @@ TryExec=sway
 Type=Application
 EOF
 fi
-
-# Configure SDDM for better Wayland support
-print_status "SDDM configured with the Dracula theme; adjust /etc/sddm.conf.d for further tweaks if needed."
 
 # Update font cache
 print_status "Updating font cache..."
