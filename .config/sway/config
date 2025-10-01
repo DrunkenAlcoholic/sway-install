@@ -164,6 +164,7 @@ bar {
 }
 
 # Autostart
+exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec mako
 exec nm-applet --indicator
 exec blueman-applet

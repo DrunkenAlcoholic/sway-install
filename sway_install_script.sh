@@ -138,7 +138,8 @@ install_packages "Installing and configuring SDDM display manager..." \
     sddm \
     qt5-graphicaleffects \
     qt5-svg \
-    qt5-quickcontrols2
+    qt5-quickcontrols2 \
+    qt5-wayland
 
 install_packages "Installing Sway and Wayland components..." \
     sway \
@@ -153,6 +154,8 @@ install_packages "Installing essential utilities..." \
     kitty \
     thunar \
     thunar-volman \
+    tumbler \
+    ffmpegthumbnailer \
     grim \
     slurp \
     swappy \
@@ -170,6 +173,18 @@ install_packages "Installing essential utilities..." \
     gvfs-mtp \
     gvfs-gphoto2 \
     gvfs-afc \
+    libnotify
+
+install_packages "Installing polkit components..." \
+    polkit \
+    polkit-gnome
+
+install_packages "Installing PipeWire audio stack..." \
+    pipewire \
+    pipewire-alsa \
+    pipewire-pulse \
+    pipewire-jack \
+    wireplumber
 
 install_packages "Installing fonts..." \
     ttf-dejavu \
@@ -198,6 +213,7 @@ install_packages "Installing additional useful packages..." \
     iwd \
     wireless_tools \
     wpa_supplicant \
+    lm_sensors \
     smartmontools \
     xdg-utils
 
@@ -255,6 +271,16 @@ paru -S --noconfirm --needed --skipreview \
 print_status "Installing Bibata cursor theme..."
 paru -S --noconfirm --needed --skipreview bibata-cursor-theme
 
+print_status "Installing Multicolor SDDM theme..."
+paru -S --noconfirm --needed --skipreview sddm-theme-multicolor-git
+
+print_status "Configuring SDDM theme..."
+sudo install -d -m 755 /etc/sddm.conf.d
+sudo tee /etc/sddm.conf.d/theme.conf > /dev/null <<'EOF'
+[Theme]
+Current=multicolor-sddm-theme
+EOF
+
 # Install NimLaunch application launcher
 print_status "Installing NimLaunch application launcher..."
 clone_to_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" "nimlaunch" ""
@@ -300,9 +326,9 @@ print_warning "SDDM will be enabled but not started until next boot"
 # Enable PipeWire services for current user
 print_status "Enabling PipeWire audio services..."
 if systemctl --user list-unit-files >/dev/null 2>&1; then
-    systemctl --user enable pipewire.service
-    systemctl --user enable pipewire-pulse.service
-    systemctl --user enable wireplumber.service
+    systemctl --user enable --now pipewire.service
+    systemctl --user enable --now pipewire-pulse.service
+    systemctl --user enable --now wireplumber.service
 else
     print_warning "systemd --user is not available in this session; skipping PipeWire user service enablement."
 fi
