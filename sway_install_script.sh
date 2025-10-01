@@ -12,6 +12,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Function to print colored output
 print_status() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -45,7 +47,11 @@ print_status "Starting Sway WM installation on minimal Arch Linux..."
 
 # Update system
 print_status "Updating system packages..."
-sudo pacman -Syu --noconfirm
+if [[ ${SWAY_INSTALL_SKIP_UPGRADE:-0} == 1 ]]; then
+    print_warning "SWAY_INSTALL_SKIP_UPGRADE=1 detected; skipping system upgrade."
+else
+    sudo pacman -Syu --noconfirm
+fi
 
 # Install base packages needed for minimal system
 print_status "Installing base system packages..."
@@ -125,6 +131,7 @@ sudo pacman -S --noconfirm --needed \
     gtk3 \
     qt5ct \
     lxappearance \
+    bibata-cursor-theme \
     iwd \
     wireless_tools \
     wpa_supplicant \
@@ -132,12 +139,29 @@ sudo pacman -S --noconfirm --needed \
     xdg-utils
 
 # Detect VirtualBox environment and install guest utilities if needed
-print_status "Checking for VirtualBox environment..."
-if systemd-detect-virt --quiet --vm; then
-    sudo pacman -S --noconfirm --needed open-vm-tools
-else
-    print_status "No virtualization detected; skipping VirtualBox guest utilities installation."
-fi
+print_status "Checking virtualization environment..."
+virt_type=$(systemd-detect-virt 2>/dev/null || echo "unknown")
+case "$virt_type" in
+    oracle)
+        print_status "VirtualBox detected; installing guest additions..."
+        sudo pacman -S --noconfirm --needed virtualbox-guest-utils
+        sudo systemctl enable --now vboxservice
+        ;;
+    vmware)
+        print_status "VMware detected; installing open-vm-tools..."
+        sudo pacman -S --noconfirm --needed open-vm-tools
+        sudo systemctl enable --now vmtoolsd.service
+        ;;
+    none)
+        print_status "No virtualization detected; skipping guest utility installation."
+        ;;
+    qemu|kvm)
+        print_status "Virtualization detected ($virt_type); no additional guest utilities configured."
+        ;;
+    *)
+        print_warning "Virtualization type '$virt_type' detected; no guest utilities configured for automatic installation."
+        ;;
+esac
 
 # Install paru AUR helper
 print_status "Installing paru AUR helper..."
@@ -196,608 +220,26 @@ mkdir -p ~/.config/{sway,swaylock,waybar,kitty,mako,gtk-3.0}
 mkdir -p ~/.themes ~/.icons
 
 # Create basic Sway configuration
-print_status "Creating Sway configuration..."
-cat > ~/.config/sway/config << 'EOF'
-# Default config for sway
-# Read `man 5 sway` for a complete reference.
-
-### Variables
-# Logo key. Use Mod1 for Alt.
-set $mod Mod4
-# Home row direction keys, like vim
-set $left h
-set $down j
-set $up k
-set $right l
-# Your preferred terminal emulator
-set $term kitty
-# Your preferred application launcher
-set $menu ~/.local/bin/nimlaunch
-
-### Output configuration
-# Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg #282a36 solid_color
-
-### Dracula color scheme for Sway
-# class                 border  backgr. text    indicator child_border
-client.focused          #6272a4 #6272a4 #f8f8f2 #6272a4   #6272a4
-client.focused_inactive #44475a #44475a #f8f8f2 #44475a   #44475a
-client.unfocused        #282a36 #282a36 #bfbfbf #282a36   #282a36
-client.urgent           #44475a #ff5555 #f8f8f2 #ff5555   #ff5555
-client.placeholder      #282a36 #0c0c0c #f8f8f2 #000000   #0c0c0c
-
-### Input configuration
-input "type:touchpad" {
-    tap enabled
-    natural_scroll enabled
-}
-
-### Key bindings
-# Start a terminal
-bindsym $mod+Return exec $term
-
-# Kill focused window
-bindsym $mod+Shift+q kill
-
-# Start your launcher
-bindsym $mod+d exec $menu
-
-# Start browser
-bindsym $mod+b exec brave
-
-# Drag floating windows by holding down $mod and left mouse button.
-floating_modifier $mod normal
-
-# Reload the configuration file
-bindsym $mod+Shift+c reload
-
-# Exit sway (logs you out of your Wayland session)
-bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
-
-# Moving around:
-bindsym $mod+$left focus left
-bindsym $mod+$down focus down
-bindsym $mod+$up focus up
-bindsym $mod+$right focus right
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
-
-# Move the focused window
-bindsym $mod+Shift+$left move left
-bindsym $mod+Shift+$down move down
-bindsym $mod+Shift+$up move up
-bindsym $mod+Shift+$right move right
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
-
-# Workspaces:
-bindsym $mod+1 workspace number 1
-bindsym $mod+2 workspace number 2
-bindsym $mod+3 workspace number 3
-bindsym $mod+4 workspace number 4
-bindsym $mod+5 workspace number 5
-bindsym $mod+6 workspace number 6
-bindsym $mod+7 workspace number 7
-bindsym $mod+8 workspace number 8
-bindsym $mod+9 workspace number 9
-bindsym $mod+0 workspace number 10
-
-# Move focused container to workspace
-bindsym $mod+Shift+1 move container to workspace number 1
-bindsym $mod+Shift+2 move container to workspace number 2
-bindsym $mod+Shift+3 move container to workspace number 3
-bindsym $mod+Shift+4 move container to workspace number 4
-bindsym $mod+Shift+5 move container to workspace number 5
-bindsym $mod+Shift+6 move container to workspace number 6
-bindsym $mod+Shift+7 move container to workspace number 7
-bindsym $mod+Shift+8 move container to workspace number 8
-bindsym $mod+Shift+9 move container to workspace number 9
-bindsym $mod+Shift+0 move container to workspace number 10
-
-# Layout stuff (use Ctrl with H/V to avoid conflicting with navigation/move bindings):
-bindsym $mod+Ctrl+h splith
-bindsym $mod+Ctrl+v splitv
-bindsym $mod+s layout stacking
-bindsym $mod+w layout tabbed
-bindsym $mod+e layout toggle split
-bindsym $mod+f fullscreen
-bindsym $mod+Shift+space floating toggle
-bindsym $mod+space focus mode_toggle
-bindsym $mod+a focus parent
-
-# Scratchpad:
-bindsym $mod+Shift+minus move scratchpad
-bindsym $mod+minus scratchpad show
-
-# Resizing containers:
-mode "resize" {
-    bindsym $left resize shrink width 10px
-    bindsym $down resize grow height 10px
-    bindsym $up resize shrink height 10px
-    bindsym $right resize grow width 10px
-
-    bindsym Left resize shrink width 10px
-    bindsym Down resize grow height 10px
-    bindsym Up resize shrink height 10px
-    bindsym Right resize grow width 10px
-
-    bindsym Return mode "default"
-    bindsym Escape mode "default"
-}
-bindsym $mod+r mode "resize"
-
-# Media keys
-bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
-bindsym XF86AudioMicMute exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
-bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
-bindsym XF86MonBrightnessUp exec brightnessctl set +5%
-bindsym XF86AudioPlay exec playerctl play-pause
-bindsym XF86AudioNext exec playerctl next
-bindsym XF86AudioPrev exec playerctl previous
-
-# Screenshots
-bindsym Print exec grim ~/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png
-bindsym $mod+Print exec grim -g "$(slurp)" ~/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png
-
-# Lock screen
-bindsym $mod+i exec swaylock
-
-# File manager
-bindsym $mod+n exec thunar
-
-# Status Bar:
-bar {
-    swaybar_command waybar
-}
-
-# Autostart
-exec mako
-exec nm-applet --indicator
-exec blueman-applet
-
-# Idle configuration
-exec swayidle -w \
-         timeout 300 'swaylock -f' \
-         timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
-         before-sleep 'swaylock -f'
-EOF
+print_status "Deploying Sway configuration..."
+install -Dm644 "$SCRIPT_DIR/.config/sway/config" "$HOME/.config/sway/config"
 
 # Create swaylock configuration with Dracula theme
-print_status "Creating swaylock configuration with Dracula theme..."
-cat > ~/.config/swaylock/config << 'EOF'
-color=#282a36
-inside-color=#282a36
-inside-clear-color=#282a36
-inside-ver-color=#282a36
-inside-wrong-color=#ff5555
-
-ring-color=#6272a4
-ring-clear-color=#50fa7b
-ring-ver-color=#bd93f9
-ring-wrong-color=#ff5555
-
-line-color=#44475a
-line-clear-color=#50fa7b
-line-ver-color=#bd93f9
-line-wrong-color=#ff5555
-
-separator-color=#282a36
-text-color=#f8f8f2
-text-clear-color=#f8f8f2
-text-ver-color=#f8f8f2
-text-wrong-color=#f8f8f2
-
-bs-hl-color=#ff5555
-key-hl-color=#50fa7b
-
-indicator-thickness=8
-EOF
+print_status "Deploying swaylock configuration with Dracula theme..."
+install -Dm644 "$SCRIPT_DIR/.config/swaylock/config" "$HOME/.config/swaylock/config"
 
 # Create Waybar configuration with Dracula theme
-print_status "Creating Waybar configuration with Dracula theme..."
-cat > ~/.config/waybar/config << 'EOF'
-{
-    "layer": "top",
-    "position": "top",
-    "height": 30,
-    "spacing": 4,
-    "modules-left": ["sway/workspaces", "sway/mode"],
-    "modules-center": ["sway/window"],
-    "modules-right": ["pulseaudio", "network", "cpu", "memory", "temperature", "battery", "clock", "tray"],
-    
-    "sway/workspaces": {
-        "disable-scroll": true,
-        "all-outputs": true,
-        "format": "{name}: {icon}",
-        "format-icons": {
-            "1": "",
-            "2": "",
-            "3": "",
-            "4": "",
-            "5": "",
-            "urgent": "",
-            "focused": "",
-            "default": ""
-        }
-    },
-    
-    "clock": {
-        "format": " {:%H:%M}",
-        "format-alt": " {:%Y-%m-%d %H:%M:%S}",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
-    },
-    
-    "cpu": {
-        "format": " {usage}%",
-        "tooltip": false
-    },
-    
-    "memory": {
-        "format": " {}%"
-    },
-    
-    "temperature": {
-        "critical-threshold": 80,
-        "format-critical": "{temperatureC}°C ",
-        "format": "{temperatureC}°C ",
-        "format-icons": ["", "", ""]
-    },
-    
-    "battery": {
-        "states": {
-            "warning": 30,
-            "critical": 15
-        },
-        "format": "{capacity}% {icon}",
-        "format-charging": "{capacity}% 󰂄",
-        "format-plugged": "{capacity}% ",
-        "format-alt": "{time} {icon}",
-        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
-    },
-    
-    "network": {
-        "format-wifi": "{essid} ({signalStrength}%) 󰖩",
-        "format-ethernet": "{ipaddr}/{cidr} 󰈀",
-        "tooltip-format": "{ifname} via {gwaddr} 󰊗",
-        "format-linked": "{ifname} (No IP) 󰈂",
-        "format-disconnected": "Disconnected ⚠",
-        "format-alt": "{ifname}: {ipaddr}/{cidr}"
-    },
-    
-    "pulseaudio": {
-        "format": "{volume}% {icon} {format_source}",
-        "format-bluetooth": "{volume}% {icon} {format_source}",
-        "format-bluetooth-muted": "󰂲 {icon} {format_source}",
-        "format-muted": "󰖁 {format_source}",
-        "format-source": "{volume}% ",
-        "format-source-muted": "",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": ["", "", ""]
-        },
-        "on-click": "pavucontrol"
-    }
-}
-EOF
+print_status "Deploying Waybar configuration with Dracula theme..."
+install -Dm644 "$SCRIPT_DIR/.config/waybar/config" "$HOME/.config/waybar/config"
 
-cat > ~/.config/waybar/style.css << 'EOF'
-/* Dracula Theme for Waybar */
-* {
-    border: none;
-    border-radius: 0;
-    font-family: "JetBrainsMono Nerd Font", "Font Awesome 6 Free";
-    font-size: 13px;
-    min-height: 0;
-}
-
-window#waybar {
-    background-color: #282a36;
-    border-bottom: 3px solid #6272a4;
-    color: #f8f8f2;
-    transition-property: background-color;
-    transition-duration: .5s;
-}
-
-window#waybar.hidden {
-    opacity: 0.2;
-}
-
-#workspaces button {
-    padding: 0 8px;
-    background-color: transparent;
-    color: #f8f8f2;
-    border-bottom: 3px solid transparent;
-}
-
-#workspaces button:hover {
-    background: #44475a;
-}
-
-#workspaces button.focused {
-    background-color: #6272a4;
-    border-bottom: 3px solid #bd93f9;
-}
-
-#workspaces button.urgent {
-    background-color: #ff5555;
-}
-
-#mode {
-    background-color: #ff79c6;
-    color: #282a36;
-}
-
-#clock,
-#battery,
-#cpu,
-#memory,
-#temperature,
-#network,
-#pulseaudio,
-#tray {
-    padding: 0 10px;
-    color: #f8f8f2;
-}
-
-#window,
-#workspaces {
-    margin: 0 4px;
-}
-
-.modules-left > widget:first-child > #workspaces {
-    margin-left: 0;
-}
-
-.modules-right > widget:last-child > #workspaces {
-    margin-right: 0;
-}
-
-#clock {
-    background-color: #bd93f9;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#battery {
-    background-color: #50fa7b;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#battery.charging, #battery.plugged {
-    color: #282a36;
-    background-color: #50fa7b;
-}
-
-@keyframes blink {
-    to {
-        background-color: #ff5555;
-        color: #f8f8f2;
-    }
-}
-
-#battery.critical:not(.charging) {
-    background-color: #ff5555;
-    color: #f8f8f2;
-    animation-name: blink;
-    animation-duration: 0.5s;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-#cpu {
-    background-color: #ffb86c;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#memory {
-    background-color: #ff79c6;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#network {
-    background-color: #8be9fd;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#network.disconnected {
-    background-color: #ff5555;
-    color: #f8f8f2;
-}
-
-#pulseaudio {
-    background-color: #f1fa8c;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#pulseaudio.muted {
-    background-color: #6272a4;
-    color: #f8f8f2;
-}
-
-#temperature {
-    background-color: #ffb86c;
-    color: #282a36;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#temperature.critical {
-    background-color: #ff5555;
-    color: #f8f8f2;
-}
-
-#tray {
-    background-color: #6272a4;
-    border-radius: 10px;
-    margin: 5px;
-}
-
-#tray > .passive {
-    -gtk-icon-effect: dim;
-}
-
-#tray > .needs-attention {
-    -gtk-icon-effect: highlight;
-    background-color: #ff5555;
-}
-EOF
+install -Dm644 "$SCRIPT_DIR/.config/waybar/style.css" "$HOME/.config/waybar/style.css"
 
 # Create Kitty configuration with Dracula theme
-print_status "Creating Kitty configuration with Dracula theme..."
-cat > ~/.config/kitty/kitty.conf << 'EOF'
-# Kitty Configuration File - Dracula Theme
-
-# Font settings
-font_family      JetBrainsMono Nerd Font
-bold_font        auto
-italic_font      auto
-bold_italic_font auto
-font_size 12.0
-
-# Window layout
-remember_window_size  yes
-initial_window_width  640
-initial_window_height 400
-window_padding_width 10
-placement_strategy center
-
-# Tab bar
-tab_bar_edge bottom
-tab_bar_style powerline
-tab_powerline_style slanted
-tab_title_template {title}{' :{}:'.format(num_windows) if num_windows > 1 else ''}
-
-# Dracula Color Scheme
-foreground            #f8f8f2
-background            #282a36
-selection_foreground  #ffffff
-selection_background  #44475a
-
-# Cursor colors
-cursor                #f8f8f2
-cursor_text_color     #282a36
-
-# URL underline color when hovering with mouse
-url_color             #8be9fd
-
-# Kitty window border colors
-active_border_color   #ff79c6
-inactive_border_color #6272a4
-
-# Tab bar colors
-active_tab_foreground   #282a36
-active_tab_background   #f8f8f2
-inactive_tab_foreground #f8f8f2
-inactive_tab_background #6272a4
-
-# Colors for marks (marked text in the terminal)
-mark1_foreground #282a36
-mark1_background #ff5555
-mark2_foreground #282a36
-mark2_background #f1fa8c
-mark3_foreground #282a36
-mark3_background #50fa7b
-
-# The 16 terminal colors
-
-# normal
-color0 #21222c
-color1 #ff5555
-color2 #50fa7b
-color3 #f1fa8c
-color4 #bd93f9
-color5 #ff79c6
-color6 #8be9fd
-color7 #f8f8f2
-
-# bright
-color8  #6272a4
-color9  #ff6e6e
-color10 #69ff94
-color11 #ffffa5
-color12 #d6acff
-color13 #ff92df
-color14 #a4ffff
-color15 #ffffff
-
-# Performance tuning
-repaint_delay 10
-input_delay 3
-sync_to_monitor yes
-
-# Mouse
-copy_on_select no
-mouse_hide_wait 3.0
-url_style curly
-
-# Advanced
-close_on_child_death no
-allow_remote_control no
-update_check_interval 24
-startup_session none
-clipboard_control write-clipboard write-primary
-term xterm-kitty
-EOF
+print_status "Deploying Kitty configuration with Dracula theme..."
+install -Dm644 "$SCRIPT_DIR/.config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 
 # Create Mako (notification daemon) configuration with Dracula theme
-print_status "Creating Mako configuration with Dracula theme..."
-cat > ~/.config/mako/config << 'EOF'
-sort=-time
-layer=overlay
-background-color=#282a36
-text-color=#f8f8f2
-width=300
-height=110
-border-size=2
-border-color=#bd93f9
-border-radius=15
-icons=1
-max-icon-size=64
-default-timeout=5000
-ignore-timeout=1
-font=JetBrainsMono Nerd Font 11
-
-[urgency=low]
-border-color=#6272a4
-background-color=#44475a
-
-[urgency=normal]
-border-color=#ffb86c
-background-color=#282a36
-
-[urgency=high]
-border-color=#ff5555
-background-color=#ff5555
-text-color=#f8f8f2
-default-timeout=0
-
-[category=mpd]
-default-timeout=2000
-group-by=category
-EOF
+print_status "Deploying Mako configuration with Dracula theme..."
+install -Dm644 "$SCRIPT_DIR/.config/mako/config" "$HOME/.config/mako/config"
 
 # Create Screenshots directory
 print_status "Creating Screenshots directory..."
@@ -805,24 +247,7 @@ mkdir -p ~/Screenshots
 
 # Create GTK theme configuration for Dracula
 print_status "Configuring GTK theme with Dracula..."
-cat > ~/.config/gtk-3.0/settings.ini << 'EOF'
-[Settings]
-gtk-theme-name=Dracula
-gtk-icon-theme-name=Dracula
-gtk-font-name=JetBrainsMono Nerd Font 11
-gtk-cursor-theme-name=Adwaita
-gtk-cursor-theme-size=0
-gtk-toolbar-style=GTK_TOOLBAR_BOTH
-gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
-gtk-button-images=1
-gtk-menu-images=1
-gtk-enable-event-sounds=1
-gtk-enable-input-feedback-sounds=1
-gtk-xft-antialias=1
-gtk-xft-hinting=1
-gtk-xft-hintstyle=hintfull
-gtk-application-prefer-dark-theme=1
-EOF
+install -Dm644 "$SCRIPT_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
 
 # Enable and start necessary services
 print_status "Enabling system services..."
@@ -892,10 +317,23 @@ if ! grep -q "Sway install script theme exports" "$BASHRC_FILE"; then
         echo "# Sway install script theme exports"
         echo "export GTK_THEME=Dracula"
         echo "export QT_QPA_PLATFORMTHEME=qt5ct"
-        echo "export XCURSOR_THEME=Adwaita"
+        echo "export XCURSOR_THEME=Bibata-Modern-Ice"
+        echo "export XCURSOR_SIZE=24"
     } >> "$BASHRC_FILE"
 else
-    print_warning "Theme-related environment variables already present in ~/.profile, skipping..."
+    if grep -q 'export XCURSOR_THEME=Adwaita' "$BASHRC_FILE"; then
+        print_status "Updating existing cursor theme export in ~/.bashrc..."
+        sed -i "s/export XCURSOR_THEME=Adwaita/export XCURSOR_THEME=Bibata-Modern-Ice/" "$BASHRC_FILE"
+        if ! grep -q 'export XCURSOR_SIZE=' "$BASHRC_FILE"; then
+            sed -i "/export XCURSOR_THEME=Bibata-Modern-Ice/a export XCURSOR_SIZE=24" "$BASHRC_FILE"
+        fi
+    else
+        if ! grep -q 'export XCURSOR_SIZE=' "$BASHRC_FILE"; then
+            print_status "Adding missing cursor size export to ~/.bashrc..."
+            sed -i "/export XCURSOR_THEME=.*$/a export XCURSOR_SIZE=24" "$BASHRC_FILE"
+        fi
+        print_warning "Theme-related environment variables already present in ~/.bashrc, skipping..."
+    fi
 fi
 
 # Ensure Nymph fetch runs in interactive shells
@@ -910,6 +348,18 @@ if ! grep -q "Sway install script Nymph fetch" "$BASHRC_FILE"; then
     } >> "$BASHRC_FILE"
 else
     print_warning "Nymph fetch snippet already present in ~/.bashrc, skipping..."
+fi
+
+# Configure Helix alias
+print_status "Adding Helix alias..."
+if ! grep -Fxq "alias hx='helix'" "$BASHRC_FILE"; then
+    {
+        echo ""
+        echo "# Sway install script Helix alias"
+        echo "alias hx='helix'"
+    } >> "$BASHRC_FILE"
+else
+    print_warning "Helix alias already present in ~/.bashrc, skipping..."
 fi
 
 # Final message
