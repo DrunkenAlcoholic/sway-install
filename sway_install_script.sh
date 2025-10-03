@@ -272,7 +272,7 @@ print_status "Installing Bibata cursor theme..."
 paru -S --noconfirm --needed --skipreview bibata-cursor-theme
 
 print_status "Installing Multicolor SDDM theme..."
-paru -S --noconfirm --needed --skipreview sddm-theme-multicolor-git
+paru -S --noconfirm --needed --skipreview multicolor-sddm-theme
 
 print_status "Configuring SDDM theme..."
 sudo install -d -m 755 /etc/sddm.conf.d
