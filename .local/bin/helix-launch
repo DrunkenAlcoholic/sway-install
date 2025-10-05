@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+kitty --class helix-editor --title Helix -e /usr/bin/hx "$@"

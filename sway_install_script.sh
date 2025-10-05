@@ -25,7 +25,7 @@ print_banner() {
     else
         printf '\033c'
     fi
-    printf '%s' "${PINK}"
+    printf '%s' "${PURPLE}"
     cat <<'EOF'
 ███████╗██╗    ██╗ █████╗ ██╗   ██╗     ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     
 ██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝     ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     
@@ -33,15 +33,6 @@ print_banner() {
 ╚════██║██║███╗██║██╔══██║  ╚██╔╝ ╚════╝██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║     
 ███████║╚███╔███╔╝██║  ██║   ██║        ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
 ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝        ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝                                                   
-EOF
-    printf '%s' "${PURPLE}"
-    cat <<'EOF'
-                ██████╗ ██████╗  █████╗  ██████╗ ██╗   ██╗██╗      █████╗ ███████╗██╗
-               ██╔════╝ ██╔══██╗██╔══██╗██╔════╝ ██║   ██║██║     ██╔══██╗██╔════╝██║
-               ██║  ███╗██████╔╝███████║██║  ███╗██║   ██║██║     ███████║███████╗██║
-               ██║   ██║██╔══██╗██╔══██║██║   ██║╚██╗ ██╔╝██║     ██╔══██║╚════██║██║
-               ╚██████╔╝██║  ██║██║  ██║╚██████╔╝ ╚████╔╝ ███████╗██║  ██║███████║██║
-                ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝
 EOF
     printf '%s\n' "${NC}"
 }
@@ -311,8 +302,10 @@ fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
 print_status "Installing custom application desktop entries..."
-install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix.desktop" \
-    "$HOME/.local/share/applications/helix.desktop"
+install -Dm755 "$SCRIPT_DIR/.local/bin/helix-launch" \
+    "$HOME/.local/bin/helix-launch"
+install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
+    "$HOME/.local/share/applications/helix-kitty.desktop"
 install -Dm644 "$SCRIPT_DIR/.local/share/file-manager/actions/open-terminal.desktop" \
     "$HOME/.local/share/file-manager/actions/open-terminal.desktop"
 

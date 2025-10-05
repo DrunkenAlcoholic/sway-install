@@ -1,8 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Helix Editor
-Comment=Modal text editor
-Exec=kitty --class helix-editor --title "Helix" -e /usr/bin/hx %F
+Name=Helix Editor (Kitty)
+Comment=Open Helix inside Kitty terminal
+Exec=helix-launch %F
+TryExec=kitty
 Icon=helix
 Terminal=false
 Categories=Utility;TextEditor;
