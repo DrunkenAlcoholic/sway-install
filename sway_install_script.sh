@@ -297,6 +297,12 @@ if ! command -v rsync &> /dev/null; then
 fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
+print_status "Installing custom application desktop entries..."
+install -Dm644 "$SCRIPT_DIR/.local/share/applications/kitty-term.desktop" \
+    "$HOME/.local/share/applications/kitty-term.desktop"
+install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix.desktop" \
+    "$HOME/.local/share/applications/helix.desktop"
+
 # Create Screenshots directory
 print_status "Creating Screenshots directory..."
 mkdir -p ~/Screenshots

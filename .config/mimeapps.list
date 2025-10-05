@@ -1,6 +1,7 @@
 [Default Applications]
 inode/directory=thunar.desktop
 application/pdf=org.pwmt.zathura.desktop
+text/plain=helix.desktop
 text/html=firefox.desktop
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop

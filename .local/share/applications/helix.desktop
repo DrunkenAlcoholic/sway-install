@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Helix Editor
+Comment=Modal text editor
+Exec=kitty --class helix-editor --title "Helix" -e hx %F
+Icon=helix
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;
+StartupNotify=true

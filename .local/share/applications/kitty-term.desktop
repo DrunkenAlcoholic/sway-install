@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kitty Terminal
+Comment=GPU based terminal emulator
+Exec=kitty
+Icon=kitty
+Categories=System;TerminalEmulator;
+StartupNotify=true
+X-XFCE-Category=TerminalEmulator
