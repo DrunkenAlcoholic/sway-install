@@ -45,13 +45,22 @@ exec_always {
   gsettings set $gnome-schema gtk-theme 'Dracula'
   gsettings set $gnome-schema icon-theme 'Dracula'
   gsettings set $gnome-schema cursor-theme 'Bibata-Modern-Ice'
-  gsettings set $gnome-schema font-name 'JetBrainsMono Nerd Font 11'
+  gsettings set $gnome-schema font-name 'DejaVu Sans 12'
   gsettings set $gnome-wm-prefs theme "Dracula"
 }
 
 bar {
     swaybar_command waybar
 }
+
+
+# 🧱 Window Appearance
+default_border none
+default_floating_border pixel 2
+hide_edge_borders smart
+gaps inner 12
+gaps outer 6
+smart_gaps on
 
 
 # ⌨️ Input Devices
@@ -69,7 +78,7 @@ input "type:touchpad" {
 bindsym $mod+Return exec $term
 bindsym $mod+Shift+q kill
 bindsym $mod+d exec $menu
-bindsym $mod+b exec brave
+bindsym $mod+b exec firefox
 floating_modifier $mod normal
 bindsym $mod+Shift+c reload
 bindsym Print exec grim - | swappy -f -
@@ -190,7 +199,4 @@ exec blueman-applet
 
 
 # 🌙 Idle Behavior
-exec swayidle -w \
-         timeout 300 'swaylock -f' \
-         timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
-         before-sleep 'swaylock -f'
+exec ~/.config/waybar/idle_toggle.sh enable

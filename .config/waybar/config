@@ -1,42 +1,66 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 24,
-  "spacing": 4,
+  "height": 30,
+  "margin": "6 12 0",
+  "spacing": 10,
   "modules-left": [
+    "custom/launcher",
     "sway/workspaces",
-    "wlr/taskbar"
+    "sway/mode"
   ],
   "modules-center": [
     "sway/window"
   ],
   "modules-right": [
-    "tray",
-    "sway/language",
+    "pulseaudio",
+    "custom/idle",
+    "network",
     "custom/weather",
-    "clock"
+    "clock",
+    "tray"
   ],
-  "wlr/taskbar": {
-    "on-click": "activate",
-    "on-click-middle": "close",
-    "ignore-list": [
-      "foot"
-    ]
+  "custom/launcher": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "nimlaunch"
   },
   "sway/workspaces": {
     "on-click": "activate",
     "on-scroll-up": "swaymsg workspace prev",
-    "on-scroll-down": "swaymsg workspace next"
+    "on-scroll-down": "swaymsg workspace next",
+    "format": "{name}"
+  },
+  "sway/mode": {
+    "format": "  {mode}",
+    "max-length": 24
   },
   "sway/window": {
-    "max-length": 128
+    "max-length": 120,
+    "format": "{title}"
   },
-  "clock": {
-    "format": "{:%c}",
-    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-bluetooth": " {volume}%",
+    "format-muted": " mute",
+    "format-icons": {
+      "default": ["", "", ""]
+    },
+    "scroll-step": 5,
+    "on-click": "pavucontrol",
+    "on-click-middle": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
   },
-  "tray": {
-    "spacing": 4
+  "custom/idle": {
+    "exec": "~/.config/waybar/idle_toggle.sh status",
+    "on-click": "~/.config/waybar/idle_toggle.sh toggle",
+    "return-type": "json",
+    "interval": 5
+  },
+  "network": {
+    "format-wired": " {ifname}",
+    "format-wireless": " {essid}",
+    "format-disconnected": "",
+    "tooltip-format": "{ifname}\n{ipaddr}"
   },
   "custom/weather": {
     "exec": "~/.config/waybar/wittr.sh",
@@ -45,8 +69,13 @@
     "tooltip": true,
     "interval": 900
   },
-  "sway/language": {
-    "format": "[{short}]",
-    "on-click": "swaymsg input 'type:keyboard' xkb_switch_layout next"
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}",
+    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+    "interval": 60
+  },
+  "tray": {
+    "icon-size": 18,
+    "spacing": 6
   }
 }

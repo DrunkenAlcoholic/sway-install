@@ -1,38 +1,126 @@
 @import url("./colors.css");
+
 * {
     border: none;
     border-radius: 0;
-    font-family: Iosevka;
-    font-size: 11pt;
+    font-family: "JetBrainsMono Nerd Font", "Iosevka", monospace;
+    font-size: 12px;
     min-height: 0;
 }
+
 window#waybar {
-    opacity: 0.9;
-    background: @background-darker;
+    background: transparent;
     color: @foreground;
-    border-bottom: 2px solid @background;
 }
+
+#workspaces,
+#sway-mode,
+#pulseaudio,
+#custom-idle,
+#network,
+#custom-weather,
+#clock,
+#tray,
+#custom-launcher {
+    background: alpha(@background, 0.85);
+    border-radius: 14px;
+    padding: 6px 12px;
+    margin: 0 4px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+#custom-launcher {
+    font-size: 18px;
+    padding: 6px 14px;
+    color: @pink;
+    transition: background 0.2s ease;
+}
+
+#custom-launcher:hover {
+    background: alpha(@pink, 0.2);
+}
+
+#workspaces {
+    padding: 0 6px;
+}
+
 #workspaces button {
-    padding: 0 10px;
-    background: @background;
     color: @foreground;
+    background: transparent;
+    padding: 0 12px;
+    margin: 4px 6px;
+    border-radius: 10px;
+    transition: background 0.2s ease, color 0.2s ease;
 }
-#workspaces button:hover {
-    box-shadow: inherit;
-    text-shadow: inherit;
-    background-image: linear-gradient(0deg, @selection, @background-darker);
-}
+
 #workspaces button.focused,
 #workspaces button.active {
-    background-image: linear-gradient(0deg, @purple, @selection);
+    background: linear-gradient(135deg, @purple, @selection);
+    color: @background;
 }
+
 #workspaces button.urgent {
-    background-image: linear-gradient(0deg, @red, @background-darker);
+    background: linear-gradient(135deg, @red, @orange);
+    color: @background;
 }
-#taskbar button.active {
-    background-image: linear-gradient(0deg, @selection, @background-darker);
+
+#workspaces button:hover {
+    background: alpha(@selection, 0.6);
+    color: @foreground;
 }
+
+#sway-mode {
+    color: @yellow;
+}
+
+#sway-window {
+    margin: 0 8px;
+    padding: 6px 14px;
+    border-radius: 14px;
+    background: alpha(@background, 0.85);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+#pulseaudio {
+    color: @cyan;
+}
+
+#pulseaudio.muted {
+    color: @red;
+}
+
+#custom-idle {
+    font-size: 16px;
+    color: @yellow;
+}
+
+#custom-idle.inhibited {
+    color: @pink;
+}
+
+#network {
+    color: @green;
+}
+
+#network.disconnected {
+    color: @red;
+}
+
+#custom-weather {
+    min-width: 120px;
+}
+
 #clock {
-    padding: 0 4px;
-    background: @background;
+    font-weight: 500;
+}
+
+#tray {
+    padding-right: 16px;
+}
+
+tooltip {
+    background: @background-darker;
+    border: 1px solid @selection;
+    border-radius: 10px;
+    color: @foreground;
 }

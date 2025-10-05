@@ -12,6 +12,7 @@ waybar
 wl-clipboard
 xorg-xwayland
 kitty
+firefox
 thunar
 thunar-volman
 tumbler

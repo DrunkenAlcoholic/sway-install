@@ -1,0 +1,10 @@
+[Default Applications]
+inode/directory=thunar.desktop
+application/pdf=org.pwmt.zathura.desktop
+text/html=firefox.desktop
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop
+image/jpeg=qimgv.desktop
+image/png=qimgv.desktop
+image/gif=qimgv.desktop
+image/webp=qimgv.desktop
