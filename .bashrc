@@ -15,6 +15,7 @@ export MOZ_ENABLE_WAYLAND=1
 export MANPAGER="sh -c 'awk '\''{ gsub(/\x1B\[[0-9;]*m/, \"\", \$0); gsub(/.\x08/, \"\", \$0); print }'\'' | bat -p -lman'"
 export EDITOR="hx"
 export VISUAL="$EDITOR"
+export TERMINAL="kitty"
 
 # Paths
 export PATH="$HOME/.local/bin:$PATH"
