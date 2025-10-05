@@ -36,7 +36,7 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 ## What the Script Installs
 
 - Sway window manager, Waybar panel, swaylock/swayidle, and supporting Wayland tools
-- Kitty terminal, Thunar file manager, notification daemon (mako), screenshot utilities (grim, slurp, swappy)
+- Kitty terminal, PCManFM file manager, notification daemon (mako), screenshot utilities (grim, slurp, swappy)
 - PipeWire audio stack with WirePlumber session manager
 - Paru AUR helper plus AUR packages such as qimgv image viewer, Dracula GTK/icons, NimLaunch, and Nymph
 - Dracula GTK theme, Dracula icons, Bibata cursor theme, Nerd Fonts, and environment configuration for GTK/Qt apps
@@ -46,7 +46,7 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 ## Post-Install Notes
 
 - Reboot after the script completes so SDDM and the configured services start cleanly.
-- When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Firefox), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
+- When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Firefox), `Super+N` (PCManFM file manager), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
 - Cursor theming: the script installs Bibata and writes `~/.icons/default/index.theme` so the cursor is consistent across GTK, Qt, and Wayland applications.
 
 ## Optional Behavior

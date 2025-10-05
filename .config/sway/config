@@ -85,7 +85,7 @@ bindsym $mod+Shift+c reload
 bindsym Print exec grim - | swappy -f -
 bindsym $mod+Print exec grim -g "$(slurp)" - | swappy -f -
 bindsym $mod+i exec swaylock
-bindsym $mod+n exec thunar
+bindsym $mod+n exec pcmanfm
 
 
 bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'

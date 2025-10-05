@@ -13,8 +13,6 @@ GREEN=$'\033[38;2;80;250;123m'
 YELLOW=$'\033[38;2;241;250;140m'
 CYAN=$'\033[38;2;139;233;253m'
 RED=$'\033[38;2;255;85;85m'
-WHITE=$'\033[38;2;248;248;242m'
-BLUE=$'\033[38;2;98;114;164m'
 NC=$'\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -313,8 +311,6 @@ fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
 print_status "Installing custom application desktop entries..."
-install -Dm644 "$SCRIPT_DIR/.local/share/applications/kitty-term.desktop" \
-    "$HOME/.local/share/applications/kitty-term.desktop"
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix.desktop" \
     "$HOME/.local/share/applications/helix.desktop"
 
@@ -397,7 +393,7 @@ print_status "Basic key bindings:"
 echo "  • Super + Enter: Open terminal (Kitty)"
 echo "  • Super + D: NimLaunch application launcher"
 echo "  • Super + B: Open Firefox browser"
-echo "  • Super + N: File manager"
+echo "  • Super + N: Open PCManFM file manager"
 echo "  • Super + I: Lock screen"
 echo "  • Super + Shift + Q: Close window"
 echo "  • Super + Shift + E: Exit Sway"
