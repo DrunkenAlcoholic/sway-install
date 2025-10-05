@@ -23,7 +23,7 @@
   "custom/launcher": {
     "format": "",
     "tooltip": false,
-    "on-click": "nimlaunch"
+    "on-click": "swaymsg exec \"~/.local/bin/nimlaunch\""
   },
   "sway/workspaces": {
     "on-click": "activate",
@@ -72,7 +72,8 @@
   "clock": {
     "format": "{:%a %d %b  %H:%M}",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-    "interval": 60
+    "interval": 60,
+    "on-click": "~/.config/waybar/calendar.sh"
   },
   "tray": {
     "icon-size": 18,
