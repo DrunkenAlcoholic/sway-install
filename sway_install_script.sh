@@ -313,6 +313,8 @@ rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 print_status "Installing custom application desktop entries..."
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix.desktop" \
     "$HOME/.local/share/applications/helix.desktop"
+install -Dm644 "$SCRIPT_DIR/.local/share/file-manager/actions/open-terminal.desktop" \
+    "$HOME/.local/share/file-manager/actions/open-terminal.desktop"
 
 # Create Screenshots directory
 print_status "Creating Screenshots directory..."
