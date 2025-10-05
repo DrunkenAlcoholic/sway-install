@@ -2,7 +2,7 @@
 Type=Application
 Name=Helix Editor (Kitty)
 Comment=Open Helix inside Kitty terminal
-Exec=helix-launch %F
+Exec=kitty --class helix-editor --title "Helix" -e /usr/bin/hx %F
 TryExec=kitty
 Icon=helix
 Terminal=false

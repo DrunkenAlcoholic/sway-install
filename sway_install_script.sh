@@ -302,8 +302,6 @@ fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
 print_status "Installing custom application desktop entries..."
-install -Dm755 "$SCRIPT_DIR/.local/bin/helix-launch" \
-    "$HOME/.local/bin/helix-launch"
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
     "$HOME/.local/share/applications/helix-kitty.desktop"
 install -Dm644 "$SCRIPT_DIR/.local/share/file-manager/actions/open-terminal.desktop" \
