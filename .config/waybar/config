@@ -7,17 +7,17 @@
   "modules-left": [
     "custom/launcher",
     "sway/workspaces",
-    "sway/mode"
+    "sway/mode",
+    "sway/window"
   ],
   "modules-center": [
-    "sway/window"
+    "clock",
+    "custom/weather"
   ],
   "modules-right": [
     "pulseaudio",
     "custom/idle",
     "network",
-    "custom/weather",
-    "clock",
     "tray"
   ],
   "custom/launcher": {
@@ -29,7 +29,13 @@
     "on-click": "activate",
     "on-scroll-up": "swaymsg workspace prev",
     "on-scroll-down": "swaymsg workspace next",
-    "format": "{name}"
+    "format": "{name}",
+    "persistent_workspaces": {
+      "1": [],
+      "2": [],
+      "3": [],
+      "4": []
+    }
   },
   "sway/mode": {
     "format": "  {mode}",

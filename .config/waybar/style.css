@@ -26,7 +26,7 @@ window#waybar {
     border-radius: 14px;
     padding: 6px 12px;
     margin: 0 4px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 #custom-launcher {
@@ -78,7 +78,7 @@ window#waybar {
     padding: 6px 14px;
     border-radius: 14px;
     background: alpha(@background, 0.85);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 #pulseaudio {
@@ -107,7 +107,7 @@ window#waybar {
 }
 
 #custom-weather {
-    min-width: 120px;
+    min-width: 40px;
 }
 
 #clock {
