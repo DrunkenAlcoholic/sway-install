@@ -192,7 +192,8 @@ else
 fi
 
 for entry in "${PACMAN_GROUPS[@]}"; do
-    IFS="::" read -r description relative_path <<< "$entry"
+    description="${entry%%::*}"
+    relative_path="${entry##*::}"
     install_package_group "$description" "pacman" "$SCRIPT_DIR/$relative_path"
 done
 
@@ -238,7 +239,8 @@ if ! command -v paru &> /dev/null; then
 fi
 
 for entry in "${PARU_GROUPS[@]}"; do
-    IFS="::" read -r description relative_path <<< "$entry"
+    description="${entry%%::*}"
+    relative_path="${entry##*::}"
     install_package_group "$description" "paru" "$SCRIPT_DIR/$relative_path"
 done
 
