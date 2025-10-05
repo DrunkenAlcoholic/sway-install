@@ -1,0 +1,7 @@
+# Core system dependencies
+base-devel
+git
+wget
+curl
+openssh
+unzip

@@ -1,0 +1,8 @@
+# PipeWire audio stack and terminal media tools
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+ncmpcpp
+mpd

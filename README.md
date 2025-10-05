@@ -16,18 +16,37 @@ After installation finishes and you reboot into the new system, create a regular
 
 ## Usage
 
-Execute the following commands as your regular user:
+### Option 1: Quick install via `curl`
 
-```bash
-sudo pacman -S --needed git
-cd ~
-git clone https://github.com/DrunkenAlcoholic/sway-install.git
-cd sway-install
-chmod +x sway_install_script.sh
-./sway_install_script.sh
-```
+1. Open a terminal on the freshly installed Arch system (logged in as your regular user).
+2. Run the bootstrap command:
 
-The script must not be run as root; it will prompt for your sudo password whenever elevated privileges are required.
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/DrunkenAlcoholic/sway-install/main/bootstrap.sh | sh
+   ```
+
+   You can pass options through to the installer by placing `--` after `sh`, for example `curl … | sh -- --skip-upgrade` to respect `SWAY_INSTALL_SKIP_UPGRADE=1`.
+
+The bootstrap script downloads the latest repository snapshot (preferring `git`, falling back to a tarball) and launches the installer automatically.
+
+### Option 2: Clone and run manually
+
+1. Ensure `git` is available, then download the repository:
+
+   ```bash
+   sudo pacman -S --needed git
+   cd ~
+   git clone https://github.com/DrunkenAlcoholic/sway-install.git
+   ```
+
+2. Run the installer from inside the cloned directory:
+
+   ```bash
+   cd sway-install
+   ./sway_install_script.sh
+   ```
+
+The installer must not be run as root; it prompts for your sudo password whenever elevated privileges are required.
 
 ## What the Script Installs
 
@@ -52,7 +71,7 @@ The script must not be run as root; it will prompt for your sudo password whenev
 ## Troubleshooting
 
 - If `paru` fails to build, ensure that `base-devel` is installed (the script installs it automatically) and that you have network access.
-- Running the script twice is safe; idempotent operations such as `install_packages` and configuration syncs will refresh existing files.
-- Review `~/.bashrc` after execution to adjust or remove the automatically appended environment blocks if desired.
+- Running the script twice is safe; package groups use `--needed` and configuration syncs refresh existing files.
+- The installer backs up any existing `~/.bashrc` (timestamped) before installing the repository version; adjust it afterwards if desired.
 
 Feel free to fork this repository and adjust the package selection or configuration files to match your workflow.

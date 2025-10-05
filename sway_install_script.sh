@@ -14,16 +14,23 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly BASHRC_FILE="$HOME/.bashrc"
+readonly TARGET_BASHRC="$HOME/.bashrc"
+readonly REPO_BASHRC="$SCRIPT_DIR/.bashrc"
 
-install_packages() {
-    local description="$1"
-    shift
-    if [[ $# -eq 0 ]]; then
-        return
+print_banner() {
+    if command -v clear >/dev/null 2>&1; then
+        clear
+    else
+        printf '\033c'
     fi
-    print_status "$description"
-    sudo pacman -S --noconfirm --needed "$@"
+    cat <<'EOF'
+███████╗██╗    ██╗ █████╗ ██╗   ██╗     ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     
+██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝     ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     
+███████╗██║ █╗ ██║███████║ ╚████╔╝█████╗██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║     
+╚════██║██║███╗██║██╔══██║  ╚██╔╝ ╚════╝██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║     
+███████║╚███╔███╔╝██║  ██║   ██║        ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
+╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝        ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝                                                   
+EOF
 }
 
 clone_and_install_paru() {
@@ -65,27 +72,66 @@ clone_to_local_bin() {
     fi
 }
 
-ensure_block_in_bashrc() {
-    local marker="$1"
-    local block="$2"
-    local action="Appending"
-    local tmp
+load_package_list() {
+    local file="$1"
+    local -n _out="$2"
 
-    if grep -Fq "$marker" "$BASHRC_FILE"; then
-        action="Refreshing"
-        tmp="$(mktemp)"
-        awk -v marker="$marker" '
-            $0 == marker {skip = 1; next}
-            skip && NF == 0 {skip = 0; next}
-            skip {next}
-            {print}
-        ' "$BASHRC_FILE" > "$tmp"
-        mv "$tmp" "$BASHRC_FILE"
+    if [[ ! -f "$file" ]]; then
+        print_error "Package list '$file' not found."
+        exit 1
     fi
 
-    printf '\n%s\n\n' "$block" >> "$BASHRC_FILE"
-    print_status "$action block '$marker' in ~/.bashrc..."
+    mapfile -t _out < <(sed -e 's/#.*//' -e 's/^[ \t]*//' -e 's/[ \t]*$//' "$file" | awk 'NF')
 }
+
+install_package_group() {
+    local description="$1"
+    local manager="$2"
+    local file="$3"
+    local packages=()
+
+    load_package_list "$file" packages
+    if (( ${#packages[@]} == 0 )); then
+        print_warning "No packages defined in $file; skipping."
+        return
+    fi
+
+    print_status "$description"
+    if [[ $manager == "pacman" ]]; then
+        sudo pacman -S --noconfirm --needed "${packages[@]}"
+    else
+        paru -S --noconfirm --needed --skipreview "${packages[@]}"
+    fi
+}
+
+deploy_repo_bashrc() {
+    if [[ ! -f "$REPO_BASHRC" ]]; then
+        print_error "Repository .bashrc not found at $REPO_BASHRC"
+        exit 1
+    fi
+
+    local backup="$TARGET_BASHRC.pre-sway-install.$(date +%Y%m%d%H%M%S)"
+    if [[ -e "$TARGET_BASHRC" ]]; then
+        print_warning "Existing ~/.bashrc detected; backing up to ${backup/#$HOME/~}"
+        cp -L "$TARGET_BASHRC" "$backup"
+    fi
+
+    install -Dm644 "$REPO_BASHRC" "$TARGET_BASHRC"
+    print_status "Installed repository .bashrc to ${TARGET_BASHRC/#$HOME/~}"
+}
+
+PACMAN_GROUPS=(
+    "Installing core system packages::packages/pacman-core.txt"
+    "Installing desktop environment packages::packages/pacman-desktop.txt"
+    "Installing PipeWire audio stack::packages/pacman-audio.txt"
+    "Installing font packages::packages/pacman-fonts.txt"
+    "Installing CLI utilities and extras::packages/pacman-extras.txt"
+)
+
+PARU_GROUPS=(
+    "Installing AUR applications::packages/paru-apps.txt"
+    "Installing AUR theming packages::packages/paru-themes.txt"
+)
 
 # Function to print colored output
 print_status() {
@@ -116,7 +162,18 @@ if ! command -v pacman &> /dev/null; then
     exit 1
 fi
 
+print_banner
 print_status "Starting Sway WM installation on minimal Arch Linux..."
+
+read -rp "Do you want to proceed with installing the Sway environment? [y/N]: " response
+case "${response}" in
+    [Yy]* )
+        ;;
+    * )
+        print_warning "Installation cancelled by user."
+        exit 0
+        ;;
+esac
 
 # Update system
 print_status "Updating system packages..."
@@ -126,96 +183,11 @@ else
     sudo pacman -Syu --noconfirm
 fi
 
-install_packages "Installing base system packages..." \
-    base-devel \
-    git \
-    wget \
-    curl \
-    openssh \
-    unzip
+for entry in "${PACMAN_GROUPS[@]}"; do
+    IFS="::" read -r description relative_path <<< "$entry"
+    install_package_group "$description" "pacman" "$SCRIPT_DIR/$relative_path"
+done
 
-install_packages "Installing and configuring SDDM display manager..." \
-    sddm \
-    qt5-graphicaleffects \
-    qt5-svg \
-    qt5-quickcontrols2 \
-    qt5-wayland
-
-install_packages "Installing Sway and Wayland components..." \
-    sway \
-    swaylock \
-    swayidle \
-    swaybg \
-    waybar \
-    wl-clipboard \
-    xorg-xwayland
-
-install_packages "Installing essential utilities..." \
-    kitty \
-    thunar \
-    thunar-volman \
-    tumbler \
-    ffmpegthumbnailer \
-    grim \
-    slurp \
-    swappy \
-    mako \
-    brightnessctl \
-    playerctl \
-    pavucontrol \
-    networkmanager \
-    network-manager-applet \
-    bluez \
-    bluez-utils \
-    blueman \
-    udisks2 \
-    gvfs \
-    gvfs-mtp \
-    gvfs-gphoto2 \
-    gvfs-afc \
-    libnotify
-
-install_packages "Installing polkit components..." \
-    polkit \
-    polkit-gnome
-
-install_packages "Installing PipeWire audio stack..." \
-    pipewire \
-    pipewire-alsa \
-    pipewire-pulse \
-    pipewire-jack \
-    wireplumber
-
-install_packages "Installing fonts..." \
-    ttf-dejavu \
-    ttf-liberation \
-    noto-fonts \
-    noto-fonts-emoji \
-    ttf-font-awesome \
-    ttf-firacode-nerd \
-    ttf-jetbrains-mono-nerd \
-    ttf-sourcecodepro-nerd
-
-install_packages "Installing additional useful packages..." \
-    htop \
-    ranger \
-    helix \
-    micro \
-    rsync \
-    tree \
-    man-db \
-    man-pages \
-    gtk3 \
-    qt5ct \
-    lxappearance \
-    xdg-desktop-portal-wlr \
-    xdg-desktop-portal-gtk \
-    iwd \
-    wireless_tools \
-    wpa_supplicant \
-    lm_sensors \
-    smartmontools \
-    xdg-utils
 
 # Detect VirtualBox environment and install guest utilities if needed
 print_status "Checking virtualization environment..."
@@ -257,22 +229,10 @@ if ! command -v paru &> /dev/null; then
     exit 1
 fi
 
-# Install Brave browser from AUR using paru
-print_status "Installing Brave browser from AUR..."
-paru -S --noconfirm --needed --skipreview brave-bin
-
-
-# Install Dracula theme components from AUR
-print_status "Installing Dracula theme components..."
-paru -S --noconfirm --needed --skipreview \
-    dracula-gtk-theme \
-    dracula-icons-git
-
-print_status "Installing Bibata cursor theme..."
-paru -S --noconfirm --needed --skipreview bibata-cursor-theme
-
-print_status "Installing Multicolor SDDM theme..."
-paru -S --noconfirm --needed --skipreview multicolor-sddm-theme
+for entry in "${PARU_GROUPS[@]}"; do
+    IFS="::" read -r description relative_path <<< "$entry"
+    install_package_group "$description" "paru" "$SCRIPT_DIR/$relative_path"
+done
 
 print_status "Configuring SDDM theme..."
 sudo install -d -m 755 /etc/sddm.conf.d
@@ -357,40 +317,8 @@ fi
 print_status "Updating font cache..."
 fc-cache -fv
 
-# Set environment variables for consistent theming
-print_status "Setting up environment variables for theming..."
-touch "$BASHRC_FILE"
-
-ensure_block_in_bashrc "# Sway install script PATH update" "$(cat <<'EOF'
-# Sway install script PATH update
-export PATH="$HOME/.local/bin:$PATH"
-EOF
-)"
-
-ensure_block_in_bashrc "# Sway install script theme exports" "$(cat <<'EOF'
-# Sway install script theme exports
-export GTK_THEME=Dracula
-export QT_QPA_PLATFORMTHEME=qt5ct
-export XCURSOR_THEME=Bibata-Modern-Ice
-export XCURSOR_SIZE=24
-EOF
-)"
-
-# Ensure Nymph fetch runs in interactive shells
-print_status "Configuring Nymph fetch for shell sessions..."
-ensure_block_in_bashrc "# Sway install script Nymph fetch" "$(cat <<'EOF'
-# Sway install script Nymph fetch
-nymph
-EOF
-)"
-
-# Configure Helix alias
-print_status "Adding Helix alias..."
-ensure_block_in_bashrc "# Sway install script Helix alias" "$(cat <<'EOF'
-# Sway install script Helix alias
-alias hx='helix'
-EOF
-)"
+print_status "Deploying repository .bashrc..."
+deploy_repo_bashrc
 
 # Final message
 print_success "Sway installation and configuration complete!"

@@ -1,0 +1,21 @@
+# CLI tools, documentation, and hardware helpers
+btop
+ranger
+helix
+fzf
+fd
+ripgrep
+zoxide
+bat
+eza
+rsync
+tree
+zathura
+zathura-pdf-mupdf
+man-db
+man-pages
+iwd
+wireless_tools
+wpa_supplicant
+lm_sensors
+smartmontools

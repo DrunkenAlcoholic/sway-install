@@ -1,0 +1,5 @@
+# Theming and cursor packages from the AUR
+dracula-gtk-theme
+dracula-icons-git
+bibata-cursor-theme
+multicolor-sddm-theme
