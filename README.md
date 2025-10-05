@@ -16,22 +16,7 @@ After installation finishes and you reboot into the new system, create a regular
 
 ## Usage
 
-### Option 1: Quick install via `curl`
-
-1. Open a terminal on the freshly installed Arch system (logged in as your regular user).
-2. Run the bootstrap command:
-
-   ```bash
-   curl -fsSL https://raw.githubusercontent.com/DrunkenAlcoholic/sway-install/main/bootstrap.sh | sh
-   ```
-
-   You can pass options through to the installer by placing `--` after `sh`, for example `curl … | sh -- --skip-upgrade` to respect `SWAY_INSTALL_SKIP_UPGRADE=1`.
-
-The bootstrap script downloads the latest repository snapshot (preferring `git`, falling back to a tarball) and launches the installer automatically.
-
-### Option 2: Clone and run manually
-
-1. Ensure `git` is available, then download the repository:
+1. Ensure `git` is available and clone the repository:
 
    ```bash
    sudo pacman -S --needed git
@@ -46,7 +31,7 @@ The bootstrap script downloads the latest repository snapshot (preferring `git`,
    ./sway_install_script.sh
    ```
 
-The installer must not be run as root; it prompts for your sudo password whenever elevated privileges are required.
+The installer must not be run as root; it prompts for your sudo password whenever elevated privileges are required and asks for confirmation before proceeding.
 
 ## What the Script Installs
 

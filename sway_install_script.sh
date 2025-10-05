@@ -348,6 +348,7 @@ print_status "Deploying repository .bashrc..."
 deploy_repo_bashrc
 
 # Final message
+print_banner
 print_success "Sway installation and configuration complete!"
 echo
 print_status "Configuration summary:"
