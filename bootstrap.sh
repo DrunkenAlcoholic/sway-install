@@ -43,7 +43,7 @@ if [ ! -x "$repo_path/sway_install_script.sh" ]; then
 fi
 
 if [ -r /dev/tty ]; then
-    exec </dev/tty
+    exec </dev/tty >/dev/tty 2>&1 || true
 fi
 
 cd "$repo_path"
