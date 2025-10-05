@@ -165,15 +165,23 @@ fi
 print_banner
 print_status "Starting Sway WM installation on minimal Arch Linux..."
 
-read -rp "Do you want to proceed with installing the Sway environment? [y/N]: " response
-case "${response}" in
-    [Yy]* )
-        ;;
-    * )
-        print_warning "Installation cancelled by user."
+if [[ -t 0 ]]; then
+    if ! read -rp "Do you want to proceed with installing the Sway environment? [y/N]: " response; then
+        print_warning "No input received; installation cancelled."
         exit 0
-        ;;
-esac
+    fi
+
+    case "${response}" in
+        [Yy]* )
+            ;;
+        * )
+            print_warning "Installation cancelled by user."
+            exit 0
+            ;;
+    esac
+else
+    print_warning "No interactive terminal detected; continuing without confirmation."
+fi
 
 # Update system
 print_status "Updating system packages..."
