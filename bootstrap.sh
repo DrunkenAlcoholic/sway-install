@@ -42,5 +42,9 @@ if [ ! -x "$repo_path/sway_install_script.sh" ]; then
     chmod +x "$repo_path/sway_install_script.sh"
 fi
 
+if [ -r /dev/tty ]; then
+    exec </dev/tty
+fi
+
 cd "$repo_path"
-exec bash ./sway_install_script.sh
+exec bash ./sway_install_script.sh "$@"

@@ -34,6 +34,16 @@ EOF
 }
 
 clone_and_install_paru() {
+    if pacman -Si paru >/dev/null 2>&1; then
+        print_status "Installing paru from official repositories..."
+        if sudo pacman -S --noconfirm --needed paru; then
+            return
+        fi
+        print_warning "Failed to install paru via pacman repo; falling back to AUR build."
+    else
+        print_warning "paru not present in official repositories; building from AUR."
+    fi
+
     local tmpdir
     tmpdir="$(mktemp -d)"
     print_status "Cloning paru into $tmpdir..."
