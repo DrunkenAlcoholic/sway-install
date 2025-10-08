@@ -7,7 +7,7 @@
     "spacing": 3, // Gaps between modules (4px)
     // Choose the order of the modules
     "modules-left": [
-        "custom/launcher"
+        "custom/launcher",
         "clock",
         "custom/weather",
         "mpd"

@@ -1,4 +1,4 @@
-@import "color.css";
+@import "colors.css";
 
 * {
     border: none;
@@ -67,18 +67,42 @@ tooltip {
 
 #window,
 #clock,
+#scratchpad,
 #battery,
 #pulseaudio,
 #network,
 #workspaces,
+#custom-launcher,
+#custom-weather,
+#custom-idle,
 #tray,
 #backlight
 {
     padding: 5px 5px;
 }
 
+#custom-launcher {
+  color: @blue;
+}
+
+#custom-weather {
+  color: @yellow;
+}
+
+#custom-idle {
+  color: @yellow;
+}
+
+#custom-idle.inhibited {
+  color: @orange;
+}
+
 #pulseaudio {
   color: @blue;
+}
+
+#pulseaudio.muted {
+  color: @red;
 }
 
 #battery {
