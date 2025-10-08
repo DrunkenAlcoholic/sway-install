@@ -10,6 +10,7 @@ set $up k
 set $right l
 
 set $term kitty
+set $browser brave
 set $menu ~/.local/bin/nimlaunch
 set $gnome-schema org.gnome.desktop.interface
 set $gnome-wm-prefs org.gnome.desktop.wm.preferences
@@ -79,7 +80,7 @@ input "type:touchpad" {
 bindsym $mod+Return exec $term
 bindsym $mod+Shift+q kill
 bindsym $mod+d exec $menu
-bindsym $mod+b exec firefox
+bindsym $mod+b exec $browser
 floating_modifier $mod normal
 bindsym $mod+Shift+c reload
 bindsym Print exec grim - | swappy -f -

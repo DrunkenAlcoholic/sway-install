@@ -1,9 +1,8 @@
 # Fonts and glyph sets for the desktop environment
-ttf-dejavu
-ttf-liberation
 noto-fonts
 noto-fonts-emoji
-ttf-font-awesome
-ttf-firacode-nerd
+ttf-dejavu
+ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
-ttf-sourcecodepro-nerd
+ttf-font-awesome
+

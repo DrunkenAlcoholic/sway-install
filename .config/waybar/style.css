@@ -1,126 +1,98 @@
-@import url("./colors.css");
+@import "color.css";
 
 * {
     border: none;
     border-radius: 0;
-    font-family: "JetBrainsMono Nerd Font", "Iosevka", monospace;
-    font-size: 12px;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    font-weight: bold;
     min-height: 0;
+    margin-left: 4px;
+    margin-right: 4px; 
 }
 
 window#waybar {
-    background: transparent;
+    border-radius: 0px;
+    background: @background;
     color: @foreground;
-}
-
-#workspaces,
-#sway-mode,
-#pulseaudio,
-#custom-idle,
-#network,
-#custom-weather,
-#clock,
-#tray,
-#custom-launcher {
-    background: alpha(@background, 0.85);
-    border-radius: 14px;
-    padding: 6px 12px;
-    margin: 0 4px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-#custom-launcher {
-    font-size: 18px;
-    padding: 6px 14px;
-    color: @pink;
-    transition: background 0.2s ease;
-}
-
-#custom-launcher:hover {
-    background: alpha(@pink, 0.2);
-}
-
-#workspaces {
-    padding: 0 6px;
-}
-
-#workspaces button {
-    color: @foreground;
-    background: transparent;
-    padding: 0 12px;
-    margin: 4px 6px;
-    border-radius: 10px;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-#workspaces button.focused,
-#workspaces button.active {
-    background: linear-gradient(135deg, @purple, @selection);
-    color: @background;
-}
-
-#workspaces button.urgent {
-    background: linear-gradient(135deg, @red, @orange);
-    color: @background;
-}
-
-#workspaces button:hover {
-    background: alpha(@selection, 0.6);
-    color: @foreground;
-}
-
-#sway-mode {
-    color: @yellow;
-}
-
-#sway-window {
-    margin: 0 8px;
-    padding: 6px 14px;
-    border-radius: 14px;
-    background: alpha(@background, 0.85);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-#pulseaudio {
-    color: @cyan;
-}
-
-#pulseaudio.muted {
-    color: @red;
-}
-
-#custom-idle {
-    font-size: 16px;
-    color: @yellow;
-}
-
-#custom-idle.inhibited {
-    color: @pink;
-}
-
-#network {
-    color: @green;
-}
-
-#network.disconnected {
-    color: @red;
-}
-
-#custom-weather {
-    min-width: 40px;
-}
-
-#clock {
-    font-weight: 500;
-}
-
-#tray {
-    padding-right: 16px;
 }
 
 tooltip {
-    background: @background-darker;
-    border: 1px solid @selection;
-    border-radius: 10px;
+    background: @background;
+    border-radius: 0px;
+}
+
+#workspaces button {
+    padding: 3px;
+    margin-left: 5px;
+    margin-right: 5px;
+    border-bottom: 1px solid @background;
+}
+
+#workspaces button:nth-child(1) {color: @red;}
+#workspaces button:nth-child(2) {color: @green;}
+#workspaces button:nth-child(3) {color: @yellow;}
+#workspaces button:nth-child(4) {color: @blue;}
+#workspaces button:nth-child(5) {color: @magenta;}
+#workspaces button:nth-child(6) {color: @cyan;}
+#workspaces button:nth-child(7) {color: @red;}
+#workspaces button:nth-child(8) {color: @green;}
+#workspaces button:nth-child(9) {color: @yellow;}
+#workspaces button:nth-child(10) {color: @blue;}
+
+#workspaces button.active {
     color: @foreground;
+}
+
+#workspaces button.empty {
+    color: @bg2;
+}
+
+#workspaces button.focused {
+    background: transparent;
+    border-bottom: 1px solid @foreground;
+}
+
+#workspaces button.urgent {
+    color: @red;
+    background: @background;
+}
+
+#workspaces button:hover {
+    background: @background;
+    color: @gray;
+    box-shadow: inherit;
+    text-shadow: inherit;
+}
+
+#window,
+#clock,
+#battery,
+#pulseaudio,
+#network,
+#workspaces,
+#tray,
+#backlight
+{
+    padding: 5px 5px;
+}
+
+#pulseaudio {
+  color: @blue;
+}
+
+#battery {
+  color: @green;
+}
+
+#mpd {
+  color: @cyan;
+}
+
+#backlight {
+  color: @magenta;
+}
+
+#power-profiles-daemon {
+  color: @cyan
 }

@@ -206,11 +206,8 @@ fi
 
 # Update system
 print_status "Updating system packages..."
-if [[ ${SWAY_INSTALL_SKIP_UPGRADE:-0} == 1 ]]; then
-    print_warning "SWAY_INSTALL_SKIP_UPGRADE=1 detected; skipping system upgrade."
-else
-    sudo pacman -Syu --noconfirm
-fi
+sudo pacman -Syu --noconfirm
+
 
 for entry in "${PACMAN_GROUPS[@]}"; do
     description="${entry%%::*}"
@@ -365,7 +362,7 @@ print_status "Configuration summary:"
 echo "  • SDDM display manager installed and enabled"
 echo "  • Sway WM with Waybar status bar (Dracula theme)"
 echo "  • Kitty terminal emulator (Dracula theme)"
-echo "  • Firefox browser"
+echo "  • Brave browser"
 echo "  • NimLaunch application launcher"
 echo "  • Nymph fetch utility (auto-runs in terminal)"
 echo "  • Swaylock screen locker with Dracula theme"
@@ -385,7 +382,7 @@ echo
 print_status "Basic key bindings:"
 echo "  • Super + Enter: Open terminal (Kitty)"
 echo "  • Super + D: NimLaunch application launcher"
-echo "  • Super + B: Open Firefox browser"
+echo "  • Super + B: Open Brave browser"
 echo "  • Super + N: Open PCManFM file manager"
 echo "  • Super + I: Lock screen"
 echo "  • Super + Shift + Q: Close window"

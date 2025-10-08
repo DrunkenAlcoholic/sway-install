@@ -12,7 +12,6 @@ waybar
 wl-clipboard
 xorg-xwayland
 kitty
-firefox
 tumbler
 pcmanfm
 ffmpegthumbnailer

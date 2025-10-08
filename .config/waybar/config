@@ -1,88 +1,152 @@
+// -*- mode: jsonc -*-
 {
-  "layer": "top",
-  "position": "top",
-  "height": 30,
-  "margin": "6 12 0",
-  "spacing": 10,
-  "modules-left": [
-    "custom/launcher",
-    "sway/workspaces",
-    "sway/mode",
-    "sway/window"
-  ],
-  "modules-center": [
-    "clock",
-    "custom/weather"
-  ],
-  "modules-right": [
-    "pulseaudio",
-    "custom/idle",
-    "network",
-    "tray"
-  ],
-  "custom/launcher": {
-    "format": "",
-    "tooltip": false,
-    "on-click": "swaymsg exec \"~/.local/bin/nimlaunch\""
-  },
-  "sway/workspaces": {
-    "on-click": "activate",
-    "on-scroll-up": "swaymsg workspace prev",
-    "on-scroll-down": "swaymsg workspace next",
-    "format": "{name}",
-    "persistent_workspaces": {
-      "1": ["*"],
-      "2": ["*"],
-      "3": ["*"],
-      "4": ["*"]
-    }
-  },
-  "sway/mode": {
-    "format": "  {mode}",
-    "max-length": 24
-  },
-  "sway/window": {
-    "max-length": 120,
-    "format": "{title}"
-  },
-  "pulseaudio": {
-    "format": "{icon} {volume}%",
-    "format-bluetooth": " {volume}%",
-    "format-muted": " mute",
-    "format-icons": {
-      "default": ["", "", ""]
+    // "layer": "top", // Waybar at top layer
+    "position": "top", // Waybar position (top|bottom|left|right)
+    "height": 42, // Waybar height (to be removed for auto height)
+    // "width": 1280, // Waybar width
+    "spacing": 3, // Gaps between modules (4px)
+    // Choose the order of the modules
+    "modules-left": [
+        "custom/launcher"
+        "clock",
+        "custom/weather",
+        "mpd"
+    ],
+    "modules-center": [
+        "sway/mode",
+        "sway/scratchpad",
+        "sway/workspaces"
+    ],
+    "modules-right": [
+        "custom/idle",
+        "backlight",
+        "pulseaudio",
+        "battery",
+        "power-profiles-daemon",
+        "tray"
+    ],
+    "custom/launcher": {
+      "format": "",
+      "tooltip": false,
+      "on-click": "swaymsg exec \"~/.local/bin/nimlaunch\""
     },
-    "scroll-step": 5,
-    "on-click": "pavucontrol",
-    "on-click-middle": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
-  },
-  "custom/idle": {
-    "exec": "~/.config/waybar/idle_toggle.sh status",
-    "on-click": "~/.config/waybar/idle_toggle.sh toggle",
-    "return-type": "json",
-    "interval": 5
-  },
-  "network": {
-    "format-wired": " {ifname}",
-    "format-wireless": " {essid}",
-    "format-disconnected": "",
-    "tooltip-format": "{ifname}\n{ipaddr}"
-  },
-  "custom/weather": {
-    "exec": "~/.config/waybar/wittr.sh",
-    "return-type": "json",
-    "format": "{}",
-    "tooltip": true,
-    "interval": 900
-  },
-  "clock": {
-    "format": "{:%a %d %b  %H:%M}",
-    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-    "interval": 60,
-    "on-click": "~/.config/waybar/calendar.sh"
-  },
-  "tray": {
-    "icon-size": 18,
-    "spacing": 6
-  }
+    // Modules configuration
+    "sway/workspaces": {
+        "disable-scroll": false,
+        "all-outputs": true,
+		    "persistent-workspaces": {
+			      "1": [],
+			      "2": [],
+			      "3": [],
+			      "4": [],
+			      "5": [],
+			      "6": [],
+			      "7": [],
+			      "8": [],
+			      "9": [],
+			      "10": []
+         },
+         "format": "{icon}",
+         "format-icons": {
+             "1": "",
+             "2": "",
+             "3": "",
+             "4": "󰝚",
+             "5": "󰉋",
+             "6": "",
+             "7": "",
+             "8": "󰐍",
+             "9": "󰈙",
+             "10": "󰋾"
+    //         "urgent": "󰋑",
+    //         "focused": "󰋑",
+    //         "default": "󰋔"
+         }
+     },
+    "sway/mode": {
+        "format": "<span style=\"normal\">{}</span>"
+    },
+    "sway/scratchpad": {
+        "format": "{icon} {count}",
+        "show-empty": false,
+        "format-icons": ["", ""],
+        "tooltip": true,
+        "tooltip-format": "{app}: {title}"
+    },
+    "mpd": {
+        "format": "󰝚 {title}",
+        "format-disconnected": "",
+        "format-stopped": "",
+        "unknown-tag": "N/A",
+        "interval": 5,
+        "tooltip-format": "MPD (connected)",
+        "tooltip-format-disconnected": "MPD (disconnected)"
+    },
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10
+    },
+    "clock": {
+        // "timezone": "Australia/Perth",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        // 24-hour
+        "format": "{:%H·%M}",
+        // 12-hour
+        // "format": "{:%I·%M%p}",
+        "format-alt": "{:%a, %b %d %Y}"
+    },
+    "custom/idle": {
+      "exec": "~/.config/waybar/idle_toggle.sh status",
+      "on-click": "~/.config/waybar/idle_toggle.sh toggle",
+      "return-type": "json",
+      "interval": 5
+    },
+    "backlight": {
+        // "device": "acpi_video1",
+        "format": "{icon} {percent}",
+        "format-icons": ["󰃞", "󰃟", "󰃠"],
+        "on-click": "~/.config/sway/scripts/night-light"
+    },
+    "battery": {
+        "states": {
+            // "good": 95,
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}",
+        "format-full": "{icon} {capacity}",
+        "format-charging": "󰚥 {capacity}",
+        "format-plugged": "󰚥 {capacity}",
+        "format-icons": ["", "", "", "", ""],
+        "interval": 1
+    },
+    "power-profiles-daemon": {
+      "format": "{icon}",
+      "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
+      "tooltip": true,
+      "format-icons": {
+        "default": "",
+        "performance": "",
+        "balanced": "󰗑",
+        "power-saver": "󰌪"
+      }
+    },
+    "pulseaudio": {
+        // "scroll-step": 1, // %, can be a float
+        "format": "{icon} {volume}",
+        "format-muted": "󰖁 Muted",
+        "format-source": "{volume}% ",
+        "format-source-muted": "",
+        "format-icons": {
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pamixer --toggle-mute",
+        "on-click-right": "pavucontrol"
+    },
+    "custom/weather": {
+        "exec": "~/.config/sway/scripts/weather -o",
+        "exec-if": "ping wttr.in -c 1",
+        "on-click": "kitty -e ~/.config/sway/scripts/weather",
+        "interval": 360
+    }
 }

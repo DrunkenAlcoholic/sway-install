@@ -1,2 +1,3 @@
 # Graphical applications from the AUR
-qimgv-git
+brave-bin
+qimgv

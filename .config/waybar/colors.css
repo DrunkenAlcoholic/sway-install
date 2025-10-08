@@ -1,4 +1,7 @@
 @define-color background-darker rgba(30, 31, 41, 230);
+@define-color bg #141b1e;
+@define-color bg2 #fff2cc;
+@define-color fg #dadada;
 @define-color background #282a36;
 @define-color selection #44475a;
 @define-color foreground #f8f8f2;
