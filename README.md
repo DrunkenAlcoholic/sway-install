@@ -49,6 +49,10 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 - When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Firefox), `Super+N` (PCManFM file manager), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
 - Cursor theming: the script installs Bibata and writes `~/.icons/default/index.theme` so the cursor is consistent across GTK, Qt, and Wayland applications.
 
+## Preview
+
+![Dracula-themed Sway desktop](Screenshot.png)
+
 ## Optional Behavior
 
 - Set `SWAY_INSTALL_SKIP_UPGRADE=1` before running the script if you have already updated your system and want to skip `pacman -Syu`.
