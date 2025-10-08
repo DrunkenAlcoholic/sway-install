@@ -1,5 +1,7 @@
 # Sway Install Script
 
+![Dracula-themed Sway desktop](Screenshot.png)
+
 This repository contains an automated installer that sets up a Dracula-themed Sway desktop environment on a freshly installed Arch Linux system. It installs core Wayland tooling, productivity utilities, fonts, and quality-of-life tweaks so you can log in and start working immediately.
 
 ## Prerequisites
@@ -48,14 +50,6 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 - Reboot after the script completes so SDDM and the configured services start cleanly.
 - When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Firefox), `Super+N` (PCManFM file manager), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
 - Cursor theming: the script installs Bibata and writes `~/.icons/default/index.theme` so the cursor is consistent across GTK, Qt, and Wayland applications.
-
-## Preview
-
-![Dracula-themed Sway desktop](Screenshot.png)
-
-## Optional Behavior
-
-- Set `SWAY_INSTALL_SKIP_UPGRADE=1` before running the script if you have already updated your system and want to skip `pacman -Syu`.
 
 ## Troubleshooting
 
