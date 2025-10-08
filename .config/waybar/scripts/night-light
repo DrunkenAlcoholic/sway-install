@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-temp=3700
+TEMP=3700
+GAMMASTEP_CMD=(gammastep -m wayland -O "$TEMP")
 
-pgrep gammastep >/dev/null && pkill gammastep || gammastep -O $temp
+if ! command -v gammastep >/dev/null 2>&1; then
+    echo "gammastep not found" >&2
+    exit 1
+fi
+
+if pgrep -x gammastep >/dev/null 2>&1; then
+    gammastep -x >/dev/null 2>&1 || true
+    pkill -x gammastep
+else
+    setsid -f "${GAMMASTEP_CMD[@]}" >/dev/null 2>&1
+fi

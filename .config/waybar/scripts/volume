@@ -1,20 +1,43 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+SINK='@DEFAULT_AUDIO_SINK@'
+
+if ! command -v wpctl >/dev/null 2>&1; then
+    echo "wpctl not found" >&2
+    exit 1
+fi
 
 # --- volume helpers ---
 get_volume(){
-    pamixer --get-volume-human
+    local info
+    info="$(wpctl get-volume "$SINK" 2>/dev/null)" || return 1
+
+    if [[ "$info" == *"[MUTED]"* ]]; then
+        echo "muted"
+        return 0
+    fi
+
+    awk '{
+        for (i = 1; i <= NF; i++) {
+            if ($i ~ /^[0-9]+(\.[0-9]+)?$/) {
+                printf "%d%%\n", int(($i * 100) + 0.5)
+                exit
+            }
+        }
+    }' <<<"$info"
 }
 
 volume_up(){
-    pamixer --allow-boost --set-limit 150 -i 5
+    wpctl set-volume "$SINK" 5%+ --limit 1.5 >/dev/null
 }
 
 volume_down(){
-    pamixer --allow-boost --set-limit 150 -d 5
+    wpctl set-volume "$SINK" 5%- --limit 1.5 >/dev/null
 }
 
 toggle_mute(){
-    pamixer --toggle-mute
+    wpctl set-mute "$SINK" toggle >/dev/null
 }
 
 # --- mako/libnotify notification ---
@@ -24,22 +47,23 @@ NOTIFY_ID_FILE="/tmp/waybar_volume_notify_id"
 notify_cmd(){
     local human vol summary prev_id new_id
 
-    human="$(get_volume)"
+    human="$(get_volume || echo "muted")"
+
     if [[ "$human" == "muted" ]]; then
         vol=0
         summary="🔇 Muted"
     else
-        vol="${human%%%}"          # strip trailing %
+        vol="${human%%%}"
         summary="🔊 Volume: $human"
     fi
 
-    # Read previous ID if present (for replacement)
+    command -v notify-send >/dev/null 2>&1 || return 0
+
     if [[ -f "$NOTIFY_ID_FILE" ]]; then
-        prev_id="$(cat "$NOTIFY_ID_FILE")"
+        prev_id="$(<"$NOTIFY_ID_FILE")"
     fi
 
-    # -p / --print-id prints the ID so we can reuse it next time.
-    if [[ -n "$prev_id" ]]; then
+    if [[ -n "${prev_id:-}" ]]; then
         new_id="$(notify-send -a "waybar-volume" -p \
                  --hint "int:value:$vol" \
                  --replace-id "$prev_id" \
@@ -50,12 +74,23 @@ notify_cmd(){
                  "$summary")"
     fi
 
-    # Persist ID for next time
     echo "$new_id" > "$NOTIFY_ID_FILE"
 }
 
-case "$1" in
-    --up)     volume_up;    notify_cmd ;;
-    --down)   volume_down;  notify_cmd ;;
-    --toggle) toggle_mute;  notify_cmd ;;
+case "${1:-}" in
+    --up)
+        volume_up
+        notify_cmd
+        ;;
+    --down)
+        volume_down
+        notify_cmd
+        ;;
+    --toggle)
+        toggle_mute
+        notify_cmd
+        ;;
+    *)
+        get_volume
+        ;;
 esac

@@ -96,8 +96,8 @@
         "format-alt": "{:%a, %b %d %Y}"
     },
     "custom/idle": {
-      "exec": "~/.config/waybar/idle_toggle.sh status",
-      "on-click": "~/.config/waybar/idle_toggle.sh toggle",
+      "exec": "~/.config/waybar/scripts/idle_toggle.sh status",
+      "on-click": "~/.config/waybar/scripts/idle_toggle.sh toggle",
       "return-type": "json",
       "interval": 5
     },
@@ -140,12 +140,15 @@
         "format-icons": {
             "default": ["󰕿", "󰖀", "󰕾"]
         },
-        "on-click": "pamixer --toggle-mute",
+        "on-click": "~/.config/waybar/scripts/volume --toggle",
+        "on-click-middle": "~/.config/waybar/scripts/volume --toggle",
+        "on-scroll-up": "~/.config/waybar/scripts/volume --up",
+        "on-scroll-down": "~/.config/waybar/scripts/volume --down",
         "on-click-right": "pavucontrol"
     },
     "custom/weather": {
         "exec": "~/.config/waybar/scripts/weather.sh -o",
-        "exec-if": "ping wttr.in -c 1",
+        "exec-if": "curl -fsS --max-time 2 https://wttr.in/?format=3 >/dev/null",
         "on-click": "kitty -e ~/.config/waybar/scripts/weather.sh",
         "interval": 360
     }

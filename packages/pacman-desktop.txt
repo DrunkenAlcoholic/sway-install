@@ -12,6 +12,7 @@ waybar
 wl-clipboard
 xorg-xwayland
 kitty
+yad
 tumbler
 pcmanfm
 ffmpegthumbnailer
@@ -22,6 +23,8 @@ mako
 brightnessctl
 playerctl
 pavucontrol
+gammastep
+power-profiles-daemon
 networkmanager
 network-manager-applet
 bluez

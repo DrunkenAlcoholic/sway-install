@@ -1,36 +1,43 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Get weather
-# Source: wttr.in
+# Get weather (wttr.in)
 
 # weather location (space = "+")
 # example: "London", "Salt+Lake+City"
 weather_location="Perth"
 
 # weather units (default = "?m")
-# ?u - USCS (farenheit, mph)
-# ?m - metric (celcius, km/h)
-# ?M - metric (celcius, m/s)
+# ?u - USCS (fahrenheit, mph)
+# ?m - metric (celsius, km/h)
+# ?M - metric (celsius, m/s)
 weather_unit="?m"
 
+BASE_URL="https://wttr.in/${weather_location}"
+STATUS_URL="${BASE_URL}?format=%c%t&${weather_unit#?}"
+FULL_URL="${BASE_URL}?${weather_unit#?}"
+
 weather_status(){
-    weather=$(curl -sf "wttr.in/$weather_location?format=%c%t&$weather_unit")
-    echo "$weather"
+    curl -fsS --max-time 5 "$STATUS_URL" || echo "Weather unavailable"
 }
 
 print_weather(){
-    if ping wttr.in -c 1 &> /dev/null; then
-        echo "Getting weather information..."
-        curl -s "wttr.in/$weather_location?$weather_unit" -o /tmp/weather
-        [ -f /tmp/weather ] && clear && cat /tmp/weather
-        read -rp "Press any key to exit..." exit
+    local tmp
+    tmp="$(mktemp)"
+    trap 'rm -f "$tmp"' EXIT
+
+    if curl -fsS --max-time 10 "$FULL_URL" -o "$tmp"; then
+        ${PAGER:-less} -R "$tmp"
     else
-        echo "Can't get weather information"
+        echo "Cannot reach wttr.in right now."
     fi
 }
 
-case "$1" in
-    -o) weather_status ;;
-    *) print_weather ;;
+case "${1:-}" in
+    -o)
+        weather_status
+        ;;
+    *)
+        print_weather
+        ;;
 esac
-

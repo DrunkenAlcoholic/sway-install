@@ -87,6 +87,7 @@ bindsym Print exec grim - | swappy -f -
 bindsym $mod+Print exec grim -g "$(slurp)" - | swappy -f -
 bindsym $mod+i exec swaylock
 bindsym $mod+n exec pcmanfm
+bindsym $mod+Shift+h exec ~/.config/waybar/scripts/keyhint.sh
 
 
 bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
@@ -101,13 +102,6 @@ bindsym $mod+Left focus left
 bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
-
-
-# 🪟 Window Behavior Rules
-for_window [app_id="^launcher$"] floating enable, sticky enable
-for_window [app_id="^pavucontrol$"] floating enable, sticky enable
-for_window [app_id="blueman-manager"] floating enable, sticky enable
-for_window [app_id="galculator"] floating enable
 
 
 # 🧠 Tiling & Layout
@@ -201,4 +195,4 @@ exec blueman-applet
 
 
 # 🌙 Idle Behavior
-exec ~/.config/waybar/idle_toggle.sh enable
+exec ~/.config/waybar/scripts/idle_toggle.sh enable
