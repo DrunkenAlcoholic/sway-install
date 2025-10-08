@@ -105,7 +105,7 @@
         // "device": "acpi_video1",
         "format": "{icon} {percent}",
         "format-icons": ["󰃞", "󰃟", "󰃠"],
-        "on-click": "~/.config/sway/scripts/night-light"
+        "on-click": "~/.config/waybar/scripts/night-light"
     },
     "battery": {
         "states": {
@@ -144,9 +144,9 @@
         "on-click-right": "pavucontrol"
     },
     "custom/weather": {
-        "exec": "~/.config/sway/scripts/weather -o",
+        "exec": "~/.config/waybar/scripts/weather.sh -o",
         "exec-if": "ping wttr.in -c 1",
-        "on-click": "kitty -e ~/.config/sway/scripts/weather",
+        "on-click": "kitty -e ~/.config/waybar/scripts/weather.sh",
         "interval": 360
     }
 }
