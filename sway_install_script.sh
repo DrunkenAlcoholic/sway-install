@@ -160,6 +160,9 @@ apply_dracula_theme_settings() {
     if ! run_gsettings set org.gnome.desktop.interface icon-theme 'Dracula'; then
         failed=1
     fi
+    if ! run_gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'; then
+        failed=1
+    fi
     if ! run_gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice'; then
         failed=1
     fi
@@ -174,6 +177,27 @@ apply_dracula_theme_settings() {
         print_warning "Could not fully apply Dracula theme via gsettings (continuing)."
     else
         print_status "Applied Dracula theme settings via gsettings."
+    fi
+}
+
+write_theme_environment_overrides() {
+    local env_dir="$HOME/.config/environment.d"
+    mkdir -p "$env_dir"
+
+    cat > "$env_dir/10-dracula.conf" <<'EOF'
+GTK_THEME=Dracula
+XCURSOR_THEME=Bibata-Modern-Ice
+XCURSOR_SIZE=24
+QT_QPA_PLATFORMTHEME=gtk3
+GTK_USE_PORTAL=1
+EOF
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user import-environment GTK_THEME XCURSOR_THEME XCURSOR_SIZE QT_QPA_PLATFORMTHEME GTK_USE_PORTAL >/dev/null 2>&1 || true
+    fi
+
+    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        dbus-update-activation-environment GTK_THEME=Dracula XCURSOR_THEME=Bibata-Modern-Ice XCURSOR_SIZE=24 QT_QPA_PLATFORMTHEME=gtk3 GTK_USE_PORTAL=1 >/dev/null 2>&1 || true
     fi
 }
 
@@ -345,6 +369,7 @@ fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
 apply_dracula_theme_settings
+write_theme_environment_overrides
 
 print_status "Installing custom application desktop entries..."
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
