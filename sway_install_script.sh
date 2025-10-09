@@ -333,6 +333,9 @@ Comment=Default cursor theme
 Inherits=Bibata-Modern-Ice
 EOF
 
+mkdir -p "$HOME/.config/gtk-4.0"
+ln -sf ../gtk-3.0/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+
 # Deploy repository-managed configs
 print_status "Syncing repository .config directory into ~/.config..."
 if ! command -v rsync &> /dev/null; then
