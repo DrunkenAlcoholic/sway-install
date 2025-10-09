@@ -5,7 +5,7 @@ entries=(
 "Super+Enter|Open terminal|kitty"
 "Super+D|Application launcher|~/.local/bin/nimlaunch"
 "Super+B|Open browser|brave"
-"Super+N|Open file manager|pcmanfm"
+"Super+N|Open file manager|thunar"
 "Super+I|Lock screen|swaylock -f"
 "Super+Shift+Q|Close focused window|swaymsg kill"
 "Super+Shift+E|Exit Sway session|swaymsg exit"

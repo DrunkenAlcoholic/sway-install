@@ -13,7 +13,9 @@ wl-clipboard
 xorg-xwayland
 kitty
 tumbler
-pcmanfm
+thunar
+thunar-archive-plugin
+thunar-volman
 ffmpegthumbnailer
 grim
 slurp

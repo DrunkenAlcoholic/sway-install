@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+  <action>
+    <icon>utilities-terminal</icon>
+    <name>Open Terminal Here</name>
+    <unique-id>1700000001-1</unique-id>
+    <command>kitty --directory="%f"</command>
+    <description>Launch Kitty in this location</description>
+    <patterns>*</patterns>
+    <directories/>
+  </action>
+</actions>

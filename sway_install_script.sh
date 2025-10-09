@@ -374,8 +374,6 @@ write_theme_environment_overrides
 print_status "Installing custom application desktop entries..."
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
     "$HOME/.local/share/applications/helix-kitty.desktop"
-install -Dm644 "$SCRIPT_DIR/.local/share/file-manager/actions/open-terminal.desktop" \
-    "$HOME/.local/share/file-manager/actions/open-terminal.desktop"
 
 # Create Screenshots directory
 print_status "Creating Screenshots directory..."
@@ -456,7 +454,7 @@ print_status "Basic key bindings:"
 echo "  • Super + Enter: Open terminal (Kitty)"
 echo "  • Super + D: NimLaunch application launcher"
 echo "  • Super + B: Open Brave browser"
-echo "  • Super + N: Open PCManFM file manager"
+echo "  • Super + N: Open Thunar file manager"
 echo "  • Super + I: Lock screen"
 echo "  • Super + Shift + Q: Close window"
 echo "  • Super + Shift + E: Exit Sway"
