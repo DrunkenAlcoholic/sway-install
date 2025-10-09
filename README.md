@@ -48,7 +48,7 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 ## Post-Install Notes
 
 - Reboot after the script completes so SDDM and the configured services start cleanly.
-- When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Brave browser), `Super+N` (Thunar file manager), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
+- When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Brave browser), `Super+N` (Thunar file manager), `Super+Shift+I` (keybinding helper), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
 - Cursor theming: the script installs Bibata and writes `~/.icons/default/index.theme` so the cursor is consistent across GTK, Qt, and Wayland applications.
 
 ## Troubleshooting

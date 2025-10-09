@@ -402,6 +402,7 @@ EOF
   • Super + D: NimLaunch application launcher
   • Super + B: Open Brave browser
   • Super + N: Open Thunar file manager
+  • Super + Shift + I: Show keybinding helper
   • Super + I: Lock screen
   • Super + Shift + Q: Close window
   • Super + Shift + E: Exit Sway
