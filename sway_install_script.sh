@@ -1,32 +1,50 @@
 #!/bin/bash
 
-# Sway WM Installation Script for Minimal Arch Linux
-# This script installs and configures a complete Sway desktop environment
+# Automated Sway desktop bootstrapper for minimal Arch installs.
+# Lays down required packages, theming, and user configuration.
 
 set -euo pipefail
 IFS=$'\n\t'
 
-# Colors for output
+# --- palette ---------------------------------------------------------------
 PURPLE=$'\033[38;2;189;147;249m'
-PINK=$'\033[38;2;255;121;198m'
 GREEN=$'\033[38;2;80;250;123m'
 YELLOW=$'\033[38;2;241;250;140m'
 CYAN=$'\033[38;2;139;233;253m'
 RED=$'\033[38;2;255;85;85m'
-NC=$'\033[0m' # No Color
+NC=$'\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly TARGET_BASHRC="$HOME/.bashrc"
 readonly REPO_BASHRC="$SCRIPT_DIR/.bashrc"
 
-print_banner() {
-    if command -v clear >/dev/null 2>&1; then
-        clear
-    else
-        printf '\033c'
-    fi
-    printf '%b' "${PURPLE}"
-    cat <<'EOF'
+PACMAN_SETS=(
+  "packages/pacman-core.txt|Core system packages"
+  "packages/pacman-desktop.txt|Desktop environment packages"
+  "packages/pacman-audio.txt|PipeWire audio stack"
+  "packages/pacman-fonts.txt|Font packages"
+  "packages/pacman-extras.txt|CLI utilities and extras"
+)
+
+PARU_SETS=(
+  "packages/paru-apps.txt|AUR applications"
+  "packages/paru-themes.txt|AUR theming packages"
+)
+
+# --- logging helpers ------------------------------------------------------
+log_info()   { printf '%b[INFO]%b %s\n'    "${CYAN}"  "${NC}" "$1"; }
+log_ok()     { printf '%b[SUCCESS]%b %s\n' "${GREEN}" "${NC}" "$1"; }
+log_warn()   { printf '%b[WARNING]%b %s\n' "${YELLOW}" "${NC}" "$1"; }
+log_err()    { printf '%b[ERROR]%b %s\n'   "${RED}"   "${NC}" "$1"; }
+
+show_banner() {
+  if command -v clear >/dev/null 2>&1; then
+    clear
+  else
+    printf '\033c'
+  fi
+  printf '%b' "${PURPLE}"
+  cat <<'EOF'
 ███████╗██╗    ██╗ █████╗ ██╗   ██╗     ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     
 ██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝     ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     
 ███████╗██║ █╗ ██║███████║ ╚████╔╝█████╗██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║     
@@ -34,157 +52,169 @@ print_banner() {
 ███████║╚███╔███╔╝██║  ██║   ██║        ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
 ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝        ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝                                                   
 EOF
-    printf '%b\n' "${NC}"
+  printf '%b\n' "${NC}"
 }
 
-clone_and_install_paru() {
-    if pacman -Si paru >/dev/null 2>&1; then
-        print_status "Installing paru from official repositories..."
-        if sudo pacman -S --noconfirm --needed paru; then
-            return
-        fi
-        print_warning "Failed to install paru via pacman repo; falling back to AUR build."
-    else
-        print_warning "paru not present in official repositories; building from AUR."
-    fi
+# --- sanity checks --------------------------------------------------------
+require_environment() {
+  if [[ $EUID -eq 0 ]]; then
+    log_err "Run as a regular user with sudo access, not root."
+    exit 1
+  fi
+  if ! command -v pacman >/dev/null 2>&1; then
+    log_err "pacman not found. This script targets Arch Linux."
+    exit 1
+  fi
+}
 
-    local tmpdir
-    tmpdir="$(mktemp -d)"
-    print_status "Cloning paru into $tmpdir..."
-    if git clone https://aur.archlinux.org/paru.git "$tmpdir"; then
-        (cd "$tmpdir" && makepkg -si --noconfirm)
-    else
-        print_error "Failed to clone paru repository."
-        rm -rf "$tmpdir"
-        exit 1
+confirm_run() {
+  if [[ ! -t 0 ]]; then
+    log_warn "No interactive terminal detected; proceeding without prompt."
+    return
+  fi
+
+  while true; do
+    read -r -p "Proceed with Sway installation? [y/N]: " reply || {
+      log_warn "No input received; aborting."
+      exit 0
+    }
+    case ${reply} in
+      [Yy]*) return ;;
+      [Nn]*|"") log_warn "Installation cancelled."; exit 0 ;;
+      *) log_warn "Please answer y or n." ;;
+    esac
+  done
+}
+
+# --- package helpers ------------------------------------------------------
+read_pkg_file() {
+  local file="$1"
+  if [[ ! -f $file ]]; then
+    log_err "Package list '$file' not found."
+    exit 1
+  fi
+  sed -e 's/#.*//' -e 's/^[ \t]*//' -e 's/[ \t]*$//' "$file" | awk 'NF'
+}
+
+install_pkg_set() {
+  local manager="$1" file="$2" label="$3"
+  local pkgs
+  mapfile -t pkgs < <(read_pkg_file "$file")
+  if ((${#pkgs[@]} == 0)); then
+    log_warn "No packages defined in $file; skipping."
+    return
+  fi
+  log_info "$label"
+  if [[ $manager == pacman ]]; then
+    sudo pacman -S --noconfirm --needed "${pkgs[@]}"
+  else
+    paru -S --noconfirm --needed --skipreview "${pkgs[@]}"
+  fi
+}
+
+install_pkg_sets() {
+  local manager="$1"; shift
+  local entry file label
+  for entry in "$@"; do
+    file="${entry%%|*}"
+    label="${entry##*|}"
+    install_pkg_set "$manager" "$SCRIPT_DIR/$file" "$label"
+  done
+}
+
+# --- tooling installs -----------------------------------------------------
+install_paru() {
+  if command -v paru >/dev/null 2>&1; then
+    log_warn "paru already installed; skipping build."
+    return
+  fi
+
+  if pacman -Si paru >/dev/null 2>&1; then
+    log_info "Installing paru from repository..."
+    if sudo pacman -S --noconfirm --needed paru; then
+      return
     fi
+    log_warn "Repository install failed; building from AUR."
+  else
+    log_warn "paru not in repositories; building from AUR."
+  fi
+
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  log_info "Cloning paru into $tmpdir"
+  if git clone https://aur.archlinux.org/paru.git "$tmpdir"; then
+    (cd "$tmpdir" && makepkg -si --noconfirm)
+  else
+    log_err "Failed to clone paru repository."
     rm -rf "$tmpdir"
+    exit 1
+  fi
+  rm -rf "$tmpdir"
+
+  if ! command -v paru >/dev/null 2>&1; then
+    log_err "paru installation failed."
+    exit 1
+  fi
 }
 
-clone_to_local_bin() {
-    local repo_url="$1"
-    local target_binary="$2"
-    local post_copy_cmd="$3"
-    local tmpdir
-    tmpdir="$(mktemp -d)"
-    print_status "Cloning ${repo_url##*/} into $tmpdir..."
-    if git clone "$repo_url" "$tmpdir"; then
-        mkdir -p "$HOME/.local/bin"
-        install -Dm755 "$tmpdir/bin/$target_binary" "$HOME/.local/bin/$target_binary"
-        if [[ -n $post_copy_cmd ]]; then
-            if ! eval "$post_copy_cmd"; then
-                print_error "Post-install step for ${repo_url##*/} failed."
-                rm -rf "$tmpdir"
-                exit 1
-            fi
-        fi
+install_local_bin() {
+  local repo="$1" binary="$2" post="${3:-}"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  log_info "Cloning ${repo##*/}"
+  if git clone "$repo" "$tmpdir"; then
+    mkdir -p "$HOME/.local/bin"
+    install -Dm755 "$tmpdir/bin/$binary" "$HOME/.local/bin/$binary"
+    if [[ -n $post ]]; then
+      if ! (cd "$tmpdir" && eval "$post"); then
+        log_err "Post-install for ${repo##*/} failed."
         rm -rf "$tmpdir"
-    else
-        print_error "Failed to clone ${repo_url##*/} repository."
-        rm -rf "$tmpdir"
         exit 1
+      fi
     fi
+  else
+    log_err "Failed to clone ${repo##*/}."
+    rm -rf "$tmpdir"
+    exit 1
+  fi
+  rm -rf "$tmpdir"
 }
 
-load_package_list() {
-    local file="$1"
-    local -n _out="$2"
-
-    if [[ ! -f "$file" ]]; then
-        print_error "Package list '$file' not found."
-        exit 1
-    fi
-
-    mapfile -t _out < <(sed -e 's/#.*//' -e 's/^[ \t]*//' -e 's/[ \t]*$//' "$file" | awk 'NF')
-}
-
-install_package_group() {
-    local description="$1"
-    local manager="$2"
-    local file="$3"
-    local packages=()
-
-    load_package_list "$file" packages
-    if (( ${#packages[@]} == 0 )); then
-        print_warning "No packages defined in $file; skipping."
-        return
-    fi
-
-    print_status "$description"
-    if [[ $manager == "pacman" ]]; then
-        sudo pacman -S --noconfirm --needed "${packages[@]}"
-    else
-        paru -S --noconfirm --needed --skipreview "${packages[@]}"
-    fi
-}
-
-deploy_repo_bashrc() {
-    if [[ ! -f "$REPO_BASHRC" ]]; then
-        print_error "Repository .bashrc not found at $REPO_BASHRC"
-        exit 1
-    fi
-
-    local backup="$TARGET_BASHRC.pre-sway-install.$(date +%Y%m%d%H%M%S)"
-    if [[ -e "$TARGET_BASHRC" ]]; then
-        print_warning "Existing ~/.bashrc detected; backing up to ${backup/#$HOME/~}"
-        cp -L "$TARGET_BASHRC" "$backup"
-    fi
-
-    install -Dm644 "$REPO_BASHRC" "$TARGET_BASHRC"
-    print_status "Installed repository .bashrc to ${TARGET_BASHRC/#$HOME/~}"
-}
-
+# --- theming --------------------------------------------------------------
 run_gsettings() {
-    if ! command -v gsettings >/dev/null 2>&1; then
-        return 1
-    fi
-
-    if command -v dbus-run-session >/dev/null 2>&1; then
-        dbus-run-session -- gsettings "$@"
-    else
-        gsettings "$@"
-    fi
+  command -v gsettings >/dev/null 2>&1 || return 1
+  if command -v dbus-run-session >/dev/null 2>&1; then
+    dbus-run-session -- gsettings "$@"
+  else
+    gsettings "$@"
+  fi
 }
 
-apply_dracula_theme_settings() {
-    if ! command -v gsettings >/dev/null 2>&1; then
-        print_warning "gsettings not available; skipping GTK theme synchronisation."
-        return
-    fi
+apply_theme() {
+  command -v gsettings >/dev/null 2>&1 || {
+    log_warn "gsettings unavailable; skipping GTK theme sync."
+    return
+  }
 
-    local failed=0
+  local failed=0
+  run_gsettings set org.gnome.desktop.interface gtk-theme 'Dracula'        || failed=1
+  run_gsettings set org.gnome.desktop.interface icon-theme 'Dracula'       || failed=1
+  run_gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || failed=1
+  run_gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice' || failed=1
+  run_gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 11' || failed=1
+  run_gsettings set org.gnome.desktop.wm.preferences theme 'Dracula'       || failed=1
 
-    if ! run_gsettings set org.gnome.desktop.interface gtk-theme 'Dracula'; then
-        failed=1
-    fi
-    if ! run_gsettings set org.gnome.desktop.interface icon-theme 'Dracula'; then
-        failed=1
-    fi
-    if ! run_gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'; then
-        failed=1
-    fi
-    if ! run_gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice'; then
-        failed=1
-    fi
-    if ! run_gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 11'; then
-        failed=1
-    fi
-    if ! run_gsettings set org.gnome.desktop.wm.preferences theme 'Dracula'; then
-        failed=1
-    fi
-
-    if (( failed )); then
-        print_warning "Could not fully apply Dracula theme via gsettings (continuing)."
-    else
-        print_status "Applied Dracula theme settings via gsettings."
-    fi
+  if ((failed)); then
+    log_warn "Could not apply all Dracula theme settings; continue manually if needed."
+  else
+    log_info "Applied Dracula theme via gsettings."
+  fi
 }
 
-write_theme_environment_overrides() {
-    local env_dir="$HOME/.config/environment.d"
-    mkdir -p "$env_dir"
-
-    cat > "$env_dir/10-dracula.conf" <<'EOF'
+write_theme_env() {
+  local env_dir="$HOME/.config/environment.d"
+  mkdir -p "$env_dir"
+  cat > "$env_dir/10-dracula.conf" <<'EOF'
 GTK_THEME=Dracula
 XCURSOR_THEME=Bibata-Modern-Ice
 XCURSOR_SIZE=24
@@ -192,223 +222,107 @@ QT_QPA_PLATFORMTHEME=gtk3
 GTK_USE_PORTAL=1
 EOF
 
-    if command -v systemctl >/dev/null 2>&1; then
-        systemctl --user import-environment GTK_THEME XCURSOR_THEME XCURSOR_SIZE QT_QPA_PLATFORMTHEME GTK_USE_PORTAL >/dev/null 2>&1 || true
-    fi
+  command -v systemctl >/dev/null 2>&1 && \
+    systemctl --user import-environment GTK_THEME XCURSOR_THEME XCURSOR_SIZE QT_QPA_PLATFORMTHEME GTK_USE_PORTAL >/dev/null 2>&1 || true
 
-    if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-        dbus-update-activation-environment GTK_THEME=Dracula XCURSOR_THEME=Bibata-Modern-Ice XCURSOR_SIZE=24 QT_QPA_PLATFORMTHEME=gtk3 GTK_USE_PORTAL=1 >/dev/null 2>&1 || true
-    fi
+  command -v dbus-update-activation-environment >/dev/null 2>&1 && \
+    dbus-update-activation-environment GTK_THEME=Dracula XCURSOR_THEME=Bibata-Modern-Ice XCURSOR_SIZE=24 QT_QPA_PLATFORMTHEME=gtk3 GTK_USE_PORTAL=1 >/dev/null 2>&1 || true
 }
 
-PACMAN_GROUPS=(
-    "Installing core system packages::packages/pacman-core.txt"
-    "Installing desktop environment packages::packages/pacman-desktop.txt"
-    "Installing PipeWire audio stack::packages/pacman-audio.txt"
-    "Installing font packages::packages/pacman-fonts.txt"
-    "Installing CLI utilities and extras::packages/pacman-extras.txt"
-)
-
-PARU_GROUPS=(
-    "Installing AUR applications::packages/paru-apps.txt"
-    "Installing AUR theming packages::packages/paru-themes.txt"
-)
-
-# Function to print colored output
-print_status() {
-    printf '%b[INFO]%b %s\n' "${CYAN}" "${NC}" "$1"
-}
-
-print_success() {
-    printf '%b[SUCCESS]%b %s\n' "${GREEN}" "${NC}" "$1"
-}
-
-print_warning() {
-    printf '%b[WARNING]%b %s\n' "${YELLOW}" "${NC}" "$1"
-}
-
-print_error() {
-    printf '%b[ERROR]%b %s\n' "${RED}" "${NC}" "$1"
-}
-
-# Check if running as root
-if [[ $EUID -eq 0 ]]; then
-   print_error "This script should not be run as root. Please run as a regular user with sudo privileges."
-   exit 1
-fi
-
-# Check if running on Arch Linux
-if ! command -v pacman &> /dev/null; then
-    print_error "This script is designed for ArchLinux systems with pacman package manager."
-    exit 1
-fi
-
-print_banner
-print_status "Starting Sway WM installation on minimal Arch Linux..."
-
-if [[ -t 0 ]]; then
-    while true; do
-        printf "Do you want to proceed with installing the Sway environment? [y/N]: "
-        if ! IFS= read -r response; then
-            print_warning "No input received; installation cancelled."
-            exit 0
-        fi
-
-        case "${response}" in
-            [Yy]* )
-                break
-                ;;
-            [Nn]* | "" )
-                print_warning "Installation cancelled by user."
-                exit 0
-                ;;
-            * )
-                print_warning "Please answer 'y' or 'n'."
-                ;;
-        esac
-    done
-else
-    print_warning "No interactive terminal detected; continuing without confirmation."
-fi
-
-# Update system
-print_status "Updating system packages..."
-sudo pacman -Syu --noconfirm
-
-
-for entry in "${PACMAN_GROUPS[@]}"; do
-    description="${entry%%::*}"
-    relative_path="${entry##*::}"
-    install_package_group "$description" "pacman" "$SCRIPT_DIR/$relative_path"
-done
-
-
-# Detect VirtualBox environment and install guest utilities if needed
-print_status "Checking virtualization environment..."
-virt_type=$(systemd-detect-virt 2>/dev/null || echo "unknown")
-case "$virt_type" in
+# --- configuration --------------------------------------------------------
+configure_virtualization() {
+  log_info "Detecting virtualization..."
+  local virt
+  virt=$(systemd-detect-virt 2>/dev/null || echo "unknown")
+  case "$virt" in
     oracle)
-        print_status "VirtualBox detected; installing guest additions..."
-        sudo pacman -S --noconfirm --needed virtualbox-guest-utils
-        sudo systemctl enable --now vboxservice
-        ;;
+      log_info "VirtualBox detected; installing guest utils."
+      sudo pacman -S --noconfirm --needed virtualbox-guest-utils
+      sudo systemctl enable --now vboxservice
+      ;;
     vmware)
-        print_status "VMware detected; installing open-vm-tools..."
-        sudo pacman -S --noconfirm --needed open-vm-tools
-        sudo systemctl enable --now vmtoolsd.service
-        ;;
+      log_info "VMware detected; installing open-vm-tools."
+      sudo pacman -S --noconfirm --needed open-vm-tools
+      sudo systemctl enable --now vmtoolsd.service
+      ;;
     qemu|kvm)
-        print_status "QEMU/KVM detected; installing guest agents..."
-        sudo pacman -S --noconfirm --needed qemu-guest-agent spice-vdagent
-        sudo systemctl enable --now qemu-guest-agent.service
-        ;;
+      log_info "QEMU/KVM detected; installing guest agents."
+      sudo pacman -S --noconfirm --needed qemu-guest-agent spice-vdagent
+      sudo systemctl enable --now qemu-guest-agent.service
+      ;;
     none)
-        print_status "No virtualization detected; skipping guest utility installation."
-        ;;
+      log_info "Bare metal detected; no guest utilities required."
+      ;;
     *)
-        print_warning "Virtualization type '$virt_type' detected; no guest utilities configured for automatic installation."
-        ;;
-esac
+      log_warn "Virtualization type '$virt' unsupported for automatic helpers."
+      ;;
+  esac
+}
 
-# Install paru AUR helper
-print_status "Installing paru AUR helper..."
-if ! command -v paru &> /dev/null; then
-    clone_and_install_paru
-else
-    print_warning "paru is already installed, skipping..."
-fi
+sync_configs() {
+  log_info "Preparing config directories"
+  mkdir -p "$HOME/.config" "$HOME/.config/gtk-4.0" ~/.themes ~/.icons ~/.config/environment.d
 
-if ! command -v paru &> /dev/null; then
-    print_error "paru installation failed; aborting."
-    exit 1
-fi
-
-for entry in "${PARU_GROUPS[@]}"; do
-    description="${entry%%::*}"
-    relative_path="${entry##*::}"
-    install_package_group "$description" "paru" "$SCRIPT_DIR/$relative_path"
-done
-
-print_status "Configuring SDDM theme..."
-sudo install -d -m 755 /etc/sddm.conf.d
-sudo tee /etc/sddm.conf.d/theme.conf > /dev/null <<'EOF'
-[Theme]
-Current=multicolor-sddm-theme
-EOF
-
-# Install NimLaunch application launcher
-print_status "Installing NimLaunch application launcher..."
-clone_to_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" "nimlaunch" ""
-
-# Install Nymph fetch utility
-print_status "Installing Nymph fetch utility..."
-clone_to_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" "nymph" \
-    'rm -rf "$HOME/.local/bin/logos"; cp -r "$tmpdir/bin/logos" "$HOME/.local/bin/"'
-
-print_status "Preparing configuration directories..."
-mkdir -p "$HOME/.config" ~/.themes ~/.icons
-
-print_status "Setting Bibata cursor theme as default..."
-mkdir -p "$HOME/.icons/default"
-cat > "$HOME/.icons/default/index.theme" <<'EOF'
+  log_info "Setting Bibata as cursor default"
+  mkdir -p "$HOME/.icons/default"
+  cat > "$HOME/.icons/default/index.theme" <<'EOF'
 [Icon Theme]
 Name=Default
 Comment=Default cursor theme
 Inherits=Bibata-Modern-Ice
 EOF
 
-mkdir -p "$HOME/.config/gtk-4.0"
-ln -sf ../gtk-3.0/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+  ln -sf ../gtk-3.0/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
 
-# Deploy repository-managed configs
-print_status "Syncing repository .config directory into ~/.config..."
-if ! command -v rsync &> /dev/null; then
-    print_error "rsync is required but not found."
+  command -v rsync >/dev/null 2>&1 || {
+    log_err "rsync is required but missing."
     exit 1
-fi
-rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
+  }
+  log_info "Syncing repository configs to ~/.config"
+  rsync -a --exclude '.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
-apply_dracula_theme_settings
-write_theme_environment_overrides
+  apply_theme
+  write_theme_env
+}
 
-print_status "Installing custom application desktop entries..."
-install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
+install_desktop_entries() {
+  log_info "Installing desktop entries"
+  install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
     "$HOME/.local/share/applications/helix-kitty.desktop"
+}
 
-# Create Screenshots directory
-print_status "Creating Screenshots directory..."
-mkdir -p ~/Screenshots
+enable_services() {
+  log_info "Enabling system services"
+  sudo systemctl enable NetworkManager
+  sudo systemctl start NetworkManager
+  sudo systemctl enable bluetooth
+  sudo systemctl start bluetooth
+  sudo systemctl enable sddm
+  log_warn "SDDM enabled; it will start after reboot."
 
-# Enable and start necessary services
-print_status "Enabling system services..."
-sudo systemctl enable NetworkManager
-sudo systemctl start NetworkManager
-sudo systemctl enable bluetooth
-sudo systemctl start bluetooth
-sudo systemctl enable sddm
-print_warning "SDDM will be enabled but not started until next boot"
-
-# Enable PipeWire services for current user
-print_status "Enabling PipeWire audio services..."
-if systemctl --user list-unit-files >/dev/null 2>&1; then
+  log_info "Enabling PipeWire user services"
+  if systemctl --user list-unit-files >/dev/null 2>&1; then
     systemctl --user enable --now pipewire.service
     systemctl --user enable --now pipewire-pulse.service
     systemctl --user enable --now wireplumber.service
-else
-    print_warning "systemd --user is not available in this session; skipping PipeWire user service enablement."
-fi
+  else
+    log_warn "systemd --user not available; skipping PipeWire enablement."
+  fi
+}
 
-# Add user to necessary groups
-print_status "Adding user to necessary groups..."
-sudo usermod -aG video,audio,input "$USER"
+ensure_user_groups() {
+  log_info "Adding user to video/audio/input groups"
+  sudo usermod -aG video,audio,input "$USER"
+}
 
-# Ensure desktop entry for Sway exists
-print_status "Ensuring desktop entry for Sway..."
-if [[ -f /usr/share/wayland-sessions/sway.desktop ]]; then
-    print_status "Desktop entry already present; leaving existing file untouched."
-else
-    print_warning "Sway desktop entry missing, creating a minimal entry."
-    sudo tee /usr/share/wayland-sessions/sway.desktop > /dev/null << 'EOF'
+ensure_sway_desktop_entry() {
+  log_info "Ensuring sway.desktop exists"
+  if [[ -f /usr/share/wayland-sessions/sway.desktop ]]; then
+    log_info "Existing sway.desktop found."
+    return
+  fi
+  log_warn "sway.desktop missing; creating minimal entry."
+  sudo tee /usr/share/wayland-sessions/sway.desktop > /dev/null <<'EOF'
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland compositor
@@ -416,51 +330,99 @@ Exec=sway
 TryExec=sway
 Type=Application
 EOF
-fi
+}
 
-# Update font cache
-print_status "Updating font cache..."
-fc-cache -fv
+install_bashrc() {
+  if [[ ! -f $REPO_BASHRC ]]; then
+    log_err "Repository .bashrc missing at $REPO_BASHRC"
+    exit 1
+  fi
+  local backup="$TARGET_BASHRC.pre-sway-install.$(date +%Y%m%d%H%M%S)"
+  if [[ -e $TARGET_BASHRC ]]; then
+    log_warn "Backing up existing ~/.bashrc to ${backup/#$HOME/~}"
+    cp -L "$TARGET_BASHRC" "$backup"
+  fi
+  install -Dm644 "$REPO_BASHRC" "$TARGET_BASHRC"
+  log_info "Installed repository .bashrc"
+}
 
-print_status "Deploying repository .bashrc..."
-deploy_repo_bashrc
+final_summary() {
+  show_banner
+  log_ok "Sway installation and configuration complete!"
+  echo
+  log_info "Configuration summary:"
+  cat <<'EOF'
+  • SDDM display manager installed and enabled
+  • Sway WM with Waybar status bar (Dracula theme)
+  • Kitty terminal emulator (Dracula theme)
+  • Brave browser
+  • NimLaunch application launcher
+  • Nymph fetch utility (auto-runs in terminal)
+  • Swaylock screen locker with Dracula theme
+  • Mako notification daemon (Dracula theme)
+  • GTK applications themed with Dracula
+  • PipeWire audio system (modern replacement for PulseAudio)
+  • Paru AUR helper installed
+  • Nerd Fonts with icon support
+  • Screenshot tools (grim + slurp)
+  • Audio/brightness controls configured
+  • Auto-lock after 5 minutes of inactivity
+  • Consistent Dracula theme across all components
+EOF
+  log_warn "Please reboot to start SDDM. Select 'Sway' from the session menu."
+  echo
+  log_info "Basic key bindings:"
+  cat <<'EOF'
+  • Super + Enter: Open terminal (Kitty)
+  • Super + D: NimLaunch application launcher
+  • Super + B: Open Brave browser
+  • Super + N: Open Thunar file manager
+  • Super + I: Lock screen
+  • Super + Shift + Q: Close window
+  • Super + Shift + E: Exit Sway
+  • Print: Screenshot
+  • Super + Print: Area screenshot
+EOF
+  log_info "Configuration lives in ~/.config"
+  log_info "Use 'paru' for additional AUR packages"
+  log_ok "Installer finished. Reboot to enjoy your new desktop!"
+}
 
-# Final message
-print_banner
-print_success "Sway installation and configuration complete!"
-echo
-print_status "Configuration summary:"
-echo "  • SDDM display manager installed and enabled"
-echo "  • Sway WM with Waybar status bar (Dracula theme)"
-echo "  • Kitty terminal emulator (Dracula theme)"
-echo "  • Brave browser"
-echo "  • NimLaunch application launcher"
-echo "  • Nymph fetch utility (auto-runs in terminal)"
-echo "  • Swaylock screen locker with Dracula theme"
-echo "  • Mako notification daemon (Dracula theme)"
-echo "  • GTK applications themed with Dracula"
-echo "  • PipeWire audio system (modern replacement for PulseAudio)"
-echo "  • Paru AUR helper installed"
-echo "  • Nerd Fonts with icon support"
-echo "  • Screenshot tools (grim + slurp)"
-echo "  • Audio/brightness controls configured"
-echo "  • Auto-lock after 5 minutes of inactivity"
-echo "  • Consistent Dracula theme across all components"
-echo
-print_warning "Please reboot your system to start SDDM display manager."
-print_warning "After reboot, select 'Sway' from the session menu in SDDM."
-echo
-print_status "Basic key bindings:"
-echo "  • Super + Enter: Open terminal (Kitty)"
-echo "  • Super + D: NimLaunch application launcher"
-echo "  • Super + B: Open Brave browser"
-echo "  • Super + N: Open Thunar file manager"
-echo "  • Super + I: Lock screen"
-echo "  • Super + Shift + Q: Close window"
-echo "  • Super + Shift + E: Exit Sway"
-echo "  • Print: Screenshot"
-echo "  • Super + Print: Area screenshot"
-echo
-print_status "Configuration files are located in ~/.config/"
-print_status "AUR helper 'paru' is available for installing AUR packages"
-print_success "Installation script completed successfully! Please reboot to use SDDM."
+# --- main flow ------------------------------------------------------------
+main() {
+  show_banner
+  log_info "Starting Sway WM installation on minimal Arch Linux..."
+  require_environment
+  confirm_run
+
+  log_info "Updating system packages"
+  sudo pacman -Syu --noconfirm
+
+  install_pkg_sets pacman "${PACMAN_SETS[@]}"
+  configure_virtualization
+  install_paru
+  install_pkg_sets paru "${PARU_SETS[@]}"
+
+  install_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" nimlaunch
+  install_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" nymph \
+    'rm -rf "$HOME/.local/bin/logos"; cp -r bin/logos "$HOME/.local/bin/"'
+
+  sync_configs
+  install_desktop_entries
+  log_info "Creating ~/Screenshots"
+  mkdir -p "$HOME/Screenshots"
+
+  enable_services
+  ensure_user_groups
+  ensure_sway_desktop_entry
+
+  log_info "Refreshing font cache"
+  fc-cache -fv
+
+  log_info "Deploying repository .bashrc"
+  install_bashrc
+
+  final_summary
+}
+
+main "$@"
