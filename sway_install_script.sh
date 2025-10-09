@@ -229,6 +229,31 @@ EOF
     dbus-update-activation-environment GTK_THEME=Dracula XCURSOR_THEME=Bibata-Modern-Ice XCURSOR_SIZE=24 QT_QPA_PLATFORMTHEME=gtk3 GTK_USE_PORTAL=1 >/dev/null 2>&1 || true
 }
 
+# --- display manager ------------------------------------------------------
+configure_sddm() {
+  log_info "Configuring SDDM theme"
+  local theme=""
+  local candidate
+  for candidate in multicolor-sddm-theme multicolor-sddm multicolor; do
+    if [[ -d "/usr/share/sddm/themes/$candidate" ]]; then
+      theme="$candidate"
+      break
+    fi
+  done
+
+  if [[ -z $theme ]]; then
+    log_warn "Multicolor SDDM theme assets not found; skipping theme selection."
+    return
+  fi
+
+  sudo install -d -m 755 /etc/sddm.conf.d
+  sudo tee /etc/sddm.conf.d/theme.conf > /dev/null <<EOF
+[Theme]
+Current=$theme
+CursorTheme=Bibata-Modern-Ice
+EOF
+}
+
 # --- configuration --------------------------------------------------------
 configure_virtualization() {
   log_info "Detecting virtualization..."
@@ -412,6 +437,7 @@ main() {
   log_info "Creating ~/Screenshots"
   mkdir -p "$HOME/Screenshots"
 
+  configure_sddm
   enable_services
   ensure_user_groups
   ensure_sway_desktop_entry
