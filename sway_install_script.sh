@@ -25,7 +25,7 @@ print_banner() {
     else
         printf '\033c'
     fi
-    printf '%s' "${PURPLE}"
+    printf '%b' "${PURPLE}"
     cat <<'EOF'
 ███████╗██╗    ██╗ █████╗ ██╗   ██╗     ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     
 ██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝     ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     
@@ -34,7 +34,7 @@ print_banner() {
 ███████║╚███╔███╔╝██║  ██║   ██║        ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
 ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝        ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝                                                   
 EOF
-    printf '%s\n' "${NC}"
+    printf '%b\n' "${NC}"
 }
 
 clone_and_install_paru() {
@@ -134,6 +134,49 @@ deploy_repo_bashrc() {
     print_status "Installed repository .bashrc to ${TARGET_BASHRC/#$HOME/~}"
 }
 
+run_gsettings() {
+    if ! command -v gsettings >/dev/null 2>&1; then
+        return 1
+    fi
+
+    if command -v dbus-run-session >/dev/null 2>&1; then
+        dbus-run-session -- gsettings "$@"
+    else
+        gsettings "$@"
+    fi
+}
+
+apply_dracula_theme_settings() {
+    if ! command -v gsettings >/dev/null 2>&1; then
+        print_warning "gsettings not available; skipping GTK theme synchronisation."
+        return
+    fi
+
+    local failed=0
+
+    if ! run_gsettings set org.gnome.desktop.interface gtk-theme 'Dracula'; then
+        failed=1
+    fi
+    if ! run_gsettings set org.gnome.desktop.interface icon-theme 'Dracula'; then
+        failed=1
+    fi
+    if ! run_gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice'; then
+        failed=1
+    fi
+    if ! run_gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 11'; then
+        failed=1
+    fi
+    if ! run_gsettings set org.gnome.desktop.wm.preferences theme 'Dracula'; then
+        failed=1
+    fi
+
+    if (( failed )); then
+        print_warning "Could not fully apply Dracula theme via gsettings (continuing)."
+    else
+        print_status "Applied Dracula theme settings via gsettings."
+    fi
+}
+
 PACMAN_GROUPS=(
     "Installing core system packages::packages/pacman-core.txt"
     "Installing desktop environment packages::packages/pacman-desktop.txt"
@@ -149,19 +192,19 @@ PARU_GROUPS=(
 
 # Function to print colored output
 print_status() {
-    echo -e "${CYAN}[INFO]${NC} $1"
+    printf '%b[INFO]%b %s\n' "${CYAN}" "${NC}" "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    printf '%b[SUCCESS]%b %s\n' "${GREEN}" "${NC}" "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    printf '%b[WARNING]%b %s\n' "${YELLOW}" "${NC}" "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    printf '%b[ERROR]%b %s\n' "${RED}" "${NC}" "$1"
 }
 
 # Check if running as root
@@ -297,6 +340,8 @@ if ! command -v rsync &> /dev/null; then
     exit 1
 fi
 rsync -a --exclude='.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
+
+apply_dracula_theme_settings
 
 print_status "Installing custom application desktop entries..."
 install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \

@@ -22,6 +22,8 @@ mako
 brightnessctl
 playerctl
 pavucontrol
+gtk-engine-murrine
+dconf
 gammastep
 power-profiles-daemon
 networkmanager
