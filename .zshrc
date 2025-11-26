@@ -19,6 +19,24 @@ export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.nimble/bin:$PATH"
 export PATH="$HOME/.choosenim/current/bin:$PATH"
 
+# Completion
+autoload -Uz compinit
+compinit -C
+zmodload -i zsh/complist
+bindkey '^I' expand-or-complete
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# History
+HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+HISTSIZE=50000
+SAVEHIST=50000
+setopt inc_append_history share_history hist_ignore_dups hist_ignore_space
+
+# Quality of life
+setopt autocd nocaseglob no_beep
+
 # Fzf
 if command -v fzf >/dev/null 2>&1; then
   eval "$(fzf --zsh)"
