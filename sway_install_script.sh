@@ -16,6 +16,8 @@ NC=$'\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly TARGET_BASHRC="$HOME/.bashrc"
 readonly REPO_BASHRC="$SCRIPT_DIR/.bashrc"
+readonly TARGET_ZSHRC="$HOME/.zshrc"
+readonly REPO_ZSHRC="$SCRIPT_DIR/.zshrc"
 
 PACMAN_SETS=(
   "packages/pacman-core.txt|Core system packages"
@@ -328,6 +330,8 @@ install_desktop_entries() {
   log_info "Installing desktop entries"
   install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
     "$HOME/.local/share/applications/helix-kitty.desktop"
+  install -Dm644 "$SCRIPT_DIR/.local/share/applications/thunar.desktop" \
+    "$HOME/.local/share/applications/thunar.desktop"
 }
 
 enable_services() {
@@ -383,6 +387,38 @@ install_bashrc() {
   fi
   install -Dm644 "$REPO_BASHRC" "$TARGET_BASHRC"
   log_info "Installed repository .bashrc"
+}
+
+install_zshrc() {
+  if [[ ! -f $REPO_ZSHRC ]]; then
+    log_err "Repository .zshrc missing at $REPO_ZSHRC"
+    exit 1
+  fi
+  local backup="$TARGET_ZSHRC.pre-sway-install.$(date +%Y%m%d%H%M%S)"
+  if [[ -e $TARGET_ZSHRC ]]; then
+    log_warn "Backing up existing ~/.zshrc to ${backup/#$HOME/~}"
+    cp -L "$TARGET_ZSHRC" "$backup"
+  fi
+  install -Dm644 "$REPO_ZSHRC" "$TARGET_ZSHRC"
+  log_info "Installed repository .zshrc"
+}
+
+set_default_shell_zsh() {
+  local zsh_path
+  zsh_path="$(command -v zsh 2>/dev/null || true)"
+  if [[ -z $zsh_path ]]; then
+    log_warn "zsh not found after install; skipping default shell change."
+    return
+  fi
+  if [[ ${SHELL:-} == "$zsh_path" ]]; then
+    log_info "Default shell already set to zsh."
+    return
+  fi
+  if chsh -s "$zsh_path" "$USER"; then
+    log_info "Changed default shell to zsh for $USER"
+  else
+    log_warn "Could not change default shell. Run: chsh -s \"$zsh_path\" \"$USER\""
+  fi
 }
 
 final_summary() {
@@ -460,8 +496,10 @@ main() {
   log_info "Refreshing font cache"
   fc-cache -fv
 
-  log_info "Deploying repository .bashrc"
+  log_info "Deploying shell configs"
   install_bashrc
+  install_zshrc
+  set_default_shell_zsh
 
   final_summary
 }

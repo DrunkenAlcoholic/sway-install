@@ -41,10 +41,11 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 - Sway window manager, Waybar panel, swaylock/swayidle, and supporting Wayland tools
 - Kitty terminal, Thunar file manager, notification daemon (mako), screenshot utilities (grim, slurp, swappy)
 - PipeWire audio stack with WirePlumber session manager
-- Paru AUR helper plus AUR packages such as qimgv image viewer, Dracula GTK/icons, NimLaunch, and Nymph
+- Paru AUR helper plus AUR packages such as Brave browser, Dracula GTK/icons, NimLaunch, and Nymph
 - Dracula GTK theme, Dracula icons, Bibata cursor theme, Nerd Fonts, and environment configuration for GTK/Qt apps
 - System services: NetworkManager, Bluetooth, user-level PipeWire services (when available)
 - Custom configuration files placed under `~/.config/`
+- Zsh installed and set as the default shell (with bash config still installed and backed up)
 
 ## Post-Install Notes
 
@@ -57,6 +58,6 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 
 - If `paru` fails to build, ensure that `base-devel` is installed (the script installs it automatically) and that you have network access.
 - Running the script twice is safe; package groups use `--needed` and configuration syncs refresh existing files.
-- The installer backs up any existing `~/.bashrc` (timestamped) before installing the repository version; adjust it afterwards if desired.
+- The installer backs up any existing `~/.bashrc` and `~/.zshrc` (timestamped) before installing the repository versions; adjust them afterwards if desired.
 
 Feel free to fork this repository and adjust the package selection or configuration files to match your workflow.
