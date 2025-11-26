@@ -44,11 +44,6 @@ tmp_file=$(mktemp)
 trap 'rm -f "$tmp_file"' EXIT
 printf '%s\n' "$formatted" > "$tmp_file"
 
-if command -v kitty >/dev/null 2>&1; then
-    kitty --class keyhint --title "Sway Keybindings" less -R "$tmp_file"
-    exit 0
-fi
-
 if command -v yad >/dev/null 2>&1; then
     printf '%s\n' "$rows" | tail -n +2 | yad --title="Sway Keybindings" \
         --width=680 \
@@ -61,6 +56,11 @@ if command -v yad >/dev/null 2>&1; then
         --column="Key" \
         --column="Description" \
         --column="Command"
+    exit 0
+fi
+
+if command -v kitty >/dev/null 2>&1; then
+    kitty --class keyhint --title "Sway Keybindings" less -R "$tmp_file"
     exit 0
 fi
 

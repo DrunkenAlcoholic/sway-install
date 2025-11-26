@@ -28,6 +28,8 @@ for_window [app_id="^pavucontrol$"] floating enable, sticky enable
 for_window [app_id="blueman-manager"] floating enable, sticky enable
 for_window [app_id="galculator"] floating enable
 for_window [app_id="^calendar$"] floating enable, sticky enable
+for_window [app_id="yad"] floating enable, border pixel 2
+for_window [class="Yad"] floating enable, border pixel 2
 
 
 # 🎨 Theme & Appearance
