@@ -41,11 +41,13 @@ formatted="$title"$'\n'$"$divider"$'\n'$formatted
 formatted+=$'\n\n\033[2mPress q to close.\033[0m'
 
 tmp_file=$(mktemp)
-trap 'rm -f "$tmp_file"' EXIT
+tmp_data=$(mktemp)
+trap 'rm -f "$tmp_file" "$tmp_data"' EXIT
 printf '%s\n' "$formatted" > "$tmp_file"
+make_rows > "$tmp_data"
 
 if command -v yad >/dev/null 2>&1; then
-    printf '%s\n' "$rows" | tail -n +2 | yad --title="Sway Keybindings" \
+    yad --title="Sway Keybindings" \
         --class=keyhint \
         --name=keyhint \
         --width=900 \
@@ -56,12 +58,17 @@ if command -v yad >/dev/null 2>&1; then
         --window-icon=utilities-terminal \
         --no-buttons \
         --fontname="JetBrainsMono Nerd Font 11" \
-        --column-widths=140,320,420 \
-        --expand-column=2 \
+        --ellipsize=end \
         --list \
         --column="Key" \
         --column="Description" \
-        --column="Command"
+        --column="Command" < "$tmp_data" &
+    yad_pid=$!
+    (
+      sleep 0.2
+      swaymsg '[pid='"$yad_pid"'] floating enable, move position center, border pixel 2, sticky enable' >/dev/null 2>&1 || true
+    ) &
+    wait $yad_pid
     exit 0
 fi
 
