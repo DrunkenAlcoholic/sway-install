@@ -347,6 +347,9 @@ install_desktop_entries() {
     "$HOME/.local/share/applications/helix-kitty.desktop"
   install -Dm644 "$SCRIPT_DIR/.local/share/applications/thunar.desktop" \
     "$HOME/.local/share/applications/thunar.desktop"
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$HOME/.local/share/applications" || true
+  fi
 }
 
 enable_services() {
