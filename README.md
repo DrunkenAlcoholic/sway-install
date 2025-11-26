@@ -6,16 +6,16 @@ This repository contains an automated installer that sets up a Dracula-themed Sw
 
 ## Prerequisites
 
-Run the official Arch installer (`archinstall`) and make sure these options are selected:
+Run the official Arch installer (`archinstall`) and pick these options for the smoothest run:
 
-- Authentication: `User account` -> `add user` and grant it `administrator privileges`
 - Profile: `minimal`
-- Applications -> Audio: `pipewire`
-- Network configuration: `Copy ISO network configuration to installation`
-- Additional packages: `git` (needed only to clone this repo).
+- Audio: `pipewire`
+- Network: `NetworkManager` (or “Copy ISO network configuration” so networking works after reboot)
+- User: add a user and give it administrator privileges (sudo)
+- Additional packages: `git` (needed only to clone this repo)
+- Bootloader/filesystems: any default combination is fine; just ensure you can boot and get online
 
-After installation finishes and you reboot into the new system, create a regular user with sudo privileges (if `archinstall` has not already done that) and sign in before running the script below.
-You need working internet for package installs.
+After installation finishes and you reboot, sign in as the regular sudo-capable user (not root) before running the script below. You need working internet for package installs.
 
 ## Usage
 
