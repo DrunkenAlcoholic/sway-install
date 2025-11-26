@@ -44,7 +44,7 @@ tmp_file=$(mktemp)
 tmp_data=$(mktemp)
 trap 'rm -f "$tmp_file" "$tmp_data"' EXIT
 printf '%s\n' "$formatted" > "$tmp_file"
-make_rows > "$tmp_data"
+make_rows | tail -n +2 > "$tmp_data"
 
 if command -v yad >/dev/null 2>&1; then
     yad --title="Sway Keybindings" \
@@ -59,6 +59,7 @@ if command -v yad >/dev/null 2>&1; then
         --no-buttons \
         --fontname="JetBrainsMono Nerd Font 11" \
         --ellipsize=end \
+        --separator=$'\t' \
         --list \
         --column="Key" \
         --column="Description" \
