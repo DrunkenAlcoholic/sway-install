@@ -64,6 +64,14 @@ require_environment() {
     log_err "pacman not found. This script targets Arch Linux."
     exit 1
   fi
+  local missing=()
+  for cmd in sudo git rsync fc-cache; do
+    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+  done
+  if ((${#missing[@]})); then
+    log_err "Missing required tools: ${missing[*]}"
+    exit 1
+  fi
 }
 
 confirm_run() {
@@ -115,8 +123,7 @@ install_pkg_sets() {
   local manager="$1"; shift
   local entry file label
   for entry in "$@"; do
-    file="${entry%%|*}"
-    label="${entry##*|}"
+    IFS='|' read -r file label <<< "$entry"
     install_pkg_set "$manager" "$SCRIPT_DIR/$file" "$label"
   done
 }
@@ -128,27 +135,21 @@ install_paru() {
     return
   fi
 
-  if pacman -Si paru >/dev/null 2>&1; then
-    log_info "Installing paru from repository..."
-    if sudo pacman -S --noconfirm --needed paru; then
-      return
-    fi
-    log_warn "Repository install failed; building from AUR."
-  else
-    log_warn "paru not in repositories; building from AUR."
+  log_info "Installing paru AUR helper"
+  if pacman -Si paru >/dev/null 2>&1 && sudo pacman -S --noconfirm --needed paru; then
+    return
   fi
+  log_warn "Repository install failed; building from AUR."
 
   local tmpdir
   tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' RETURN
   log_info "Cloning paru into $tmpdir"
-  if git clone https://aur.archlinux.org/paru.git "$tmpdir"; then
-    (cd "$tmpdir" && makepkg -si --noconfirm)
-  else
+  if ! git clone https://aur.archlinux.org/paru.git "$tmpdir"; then
     log_err "Failed to clone paru repository."
-    rm -rf "$tmpdir"
     exit 1
   fi
-  rm -rf "$tmpdir"
+  (cd "$tmpdir" && makepkg -si --noconfirm)
 
   if ! command -v paru >/dev/null 2>&1; then
     log_err "paru installation failed."
@@ -160,23 +161,25 @@ install_local_bin() {
   local repo="$1" binary="$2" post="${3:-}"
   local tmpdir
   tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' RETURN
   log_info "Cloning ${repo##*/}"
-  if git clone "$repo" "$tmpdir"; then
-    mkdir -p "$HOME/.local/bin"
-    install -Dm755 "$tmpdir/bin/$binary" "$HOME/.local/bin/$binary"
-    if [[ -n $post ]]; then
-      if ! (cd "$tmpdir" && eval "$post"); then
-        log_err "Post-install for ${repo##*/} failed."
-        rm -rf "$tmpdir"
-        exit 1
-      fi
-    fi
-  else
+  if ! git clone "$repo" "$tmpdir"; then
     log_err "Failed to clone ${repo##*/}."
-    rm -rf "$tmpdir"
     exit 1
   fi
-  rm -rf "$tmpdir"
+  local src="$tmpdir/bin/$binary"
+  if [[ ! -f $src ]]; then
+    log_err "Binary $binary not found in cloned repository."
+    exit 1
+  fi
+  mkdir -p "$HOME/.local/bin"
+  install -Dm755 "$src" "$HOME/.local/bin/$binary"
+  if [[ -n $post ]]; then
+    if ! (cd "$tmpdir" && eval "$post"); then
+      log_err "Post-install for ${repo##*/} failed."
+      exit 1
+    fi
+  fi
 }
 
 # --- theming --------------------------------------------------------------
@@ -196,12 +199,19 @@ apply_theme() {
   }
 
   local failed=0
-  run_gsettings set org.gnome.desktop.interface gtk-theme 'Dracula'        || failed=1
-  run_gsettings set org.gnome.desktop.interface icon-theme 'Dracula'       || failed=1
-  run_gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || failed=1
-  run_gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice' || failed=1
-  run_gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 11' || failed=1
-  run_gsettings set org.gnome.desktop.wm.preferences theme 'Dracula'       || failed=1
+  local setting schema key value
+  local settings=(
+    "org.gnome.desktop.interface|gtk-theme|Dracula"
+    "org.gnome.desktop.interface|icon-theme|Dracula"
+    "org.gnome.desktop.interface|color-scheme|prefer-dark"
+    "org.gnome.desktop.interface|cursor-theme|Bibata-Modern-Ice"
+    "org.gnome.desktop.interface|font-name|JetBrainsMono Nerd Font 11"
+    "org.gnome.desktop.wm.preferences|theme|Dracula"
+  )
+  for setting in "${settings[@]}"; do
+    IFS='|' read -r schema key value <<< "$setting"
+    run_gsettings set "$schema" "$key" "$value" || failed=1
+  done
 
   if ((failed)); then
     log_warn "Could not apply all Dracula theme settings; continue manually if needed."
@@ -213,6 +223,20 @@ apply_theme() {
 write_theme_env() {
   local env_dir="$HOME/.config/environment.d"
   mkdir -p "$env_dir"
+  local env_pairs=(
+    "GTK_THEME=Dracula"
+    "XCURSOR_THEME=Bibata-Modern-Ice"
+    "XCURSOR_SIZE=24"
+    "QT_QPA_PLATFORMTHEME=gtk3"
+    "GTK_USE_PORTAL=1"
+  )
+  local env_names=(
+    GTK_THEME
+    XCURSOR_THEME
+    XCURSOR_SIZE
+    QT_QPA_PLATFORMTHEME
+    GTK_USE_PORTAL
+  )
   cat > "$env_dir/10-dracula.conf" <<'EOF'
 GTK_THEME=Dracula
 XCURSOR_THEME=Bibata-Modern-Ice
@@ -222,10 +246,10 @@ GTK_USE_PORTAL=1
 EOF
 
   command -v systemctl >/dev/null 2>&1 && \
-    systemctl --user import-environment GTK_THEME XCURSOR_THEME XCURSOR_SIZE QT_QPA_PLATFORMTHEME GTK_USE_PORTAL >/dev/null 2>&1 || true
+    systemctl --user import-environment "${env_names[@]}" >/dev/null 2>&1 || true
 
   command -v dbus-update-activation-environment >/dev/null 2>&1 && \
-    dbus-update-activation-environment GTK_THEME=Dracula XCURSOR_THEME=Bibata-Modern-Ice XCURSOR_SIZE=24 QT_QPA_PLATFORMTHEME=gtk3 GTK_USE_PORTAL=1 >/dev/null 2>&1 || true
+    dbus-update-activation-environment "${env_pairs[@]}" >/dev/null 2>&1 || true
 }
 
 # --- display manager ------------------------------------------------------
@@ -256,8 +280,13 @@ EOF
 # --- configuration --------------------------------------------------------
 configure_virtualization() {
   log_info "Detecting virtualization..."
-  local virt
-  virt=$(systemd-detect-virt 2>/dev/null || echo "unknown")
+  local virt="unknown"
+  if command -v systemd-detect-virt >/dev/null 2>&1; then
+    virt=$(systemd-detect-virt 2>/dev/null || echo "unknown")
+  else
+    log_warn "systemd-detect-virt not available; skipping guest utils install."
+    return
+  fi
   case "$virt" in
     oracle)
       log_info "VirtualBox detected; installing guest utils."
@@ -296,10 +325,6 @@ Comment=Default cursor theme
 Inherits=Bibata-Modern-Ice
 EOF
 
-  command -v rsync >/dev/null 2>&1 || {
-    log_err "rsync is required but missing."
-    exit 1
-  }
   log_info "Syncing repository configs to ~/.config"
   rsync -a --exclude '.gitkeep' "$SCRIPT_DIR/.config/" "$HOME/.config/"
 
@@ -426,7 +451,7 @@ main() {
   install_paru
   install_pkg_sets paru "${PARU_SETS[@]}"
 
-  install_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch.git" nimlaunch
+  install_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch-SDL2.git" nimlaunch
   install_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" nymph \
     'rm -rf "$HOME/.local/bin/logos"; cp -r bin/logos "$HOME/.local/bin/"'
 
