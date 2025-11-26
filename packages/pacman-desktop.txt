@@ -4,9 +4,9 @@ qt5-graphicaleffects
 qt5-svg
 qt5-quickcontrols2
 qt5-wayland
-qt6-graphicaleffects
 qt6-svg
-qt6-quickcontrols2
+qt6-5compat
+qt6-declarative
 qt6-wayland
 sway
 swaylock

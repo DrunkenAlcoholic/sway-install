@@ -105,11 +105,26 @@ install_pkg_set() {
     log_warn "No packages defined in $file; skipping."
     return
   fi
+  local available=() missing=() pkg
+  for pkg in "${pkgs[@]}"; do
+    if "$manager" -Si "$pkg" >/dev/null 2>&1; then
+      available+=("$pkg")
+    else
+      missing+=("$pkg")
+    fi
+  done
+  if ((${#missing[@]})); then
+    log_warn "Skipping unavailable packages ($manager): ${missing[*]}"
+  fi
+  if ((${#available[@]} == 0)); then
+    log_warn "No installable packages in $file; skipping."
+    return
+  fi
   log_info "$label"
   if [[ $manager == pacman ]]; then
-    sudo pacman -S --noconfirm --needed "${pkgs[@]}"
+    sudo pacman -S --noconfirm --needed "${available[@]}"
   else
-    paru -S --noconfirm --needed --skipreview "${pkgs[@]}"
+    paru -S --noconfirm --needed --skipreview "${available[@]}"
   fi
 }
 
