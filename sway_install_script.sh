@@ -445,7 +445,7 @@ main() {
 
   install_local_bin "https://github.com/DrunkenAlcoholic/NimLaunch-SDL2.git" nimlaunch
   install_local_bin "https://github.com/DrunkenAlcoholic/Nymph.git" nymph \
-    'rm -rf "$HOME/.local/bin/logos"; cp -r bin/logos "$HOME/.local/bin/"'
+    'rm -rf "$HOME/.config/nymph/logos"; mkdir -p "$HOME/.config/nymph"; cp -r bin/logos "$HOME/.config/nymph/"'
 
   sync_configs
   install_desktop_entries
