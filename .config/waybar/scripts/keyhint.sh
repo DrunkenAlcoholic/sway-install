@@ -46,12 +46,16 @@ printf '%s\n' "$formatted" > "$tmp_file"
 
 if command -v yad >/dev/null 2>&1; then
     printf '%s\n' "$rows" | tail -n +2 | yad --title="Sway Keybindings" \
-        --width=680 \
-        --height=520 \
+        --width=900 \
+        --height=540 \
+        --undecorated \
+        --center \
+        --borders=12 \
         --window-icon=utilities-terminal \
         --no-buttons \
-        --center \
         --fontname="JetBrainsMono Nerd Font 11" \
+        --column-widths=140 320 420 \
+        --expand-column=2 \
         --list \
         --column="Key" \
         --column="Description" \
