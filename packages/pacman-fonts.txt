@@ -4,5 +4,5 @@ noto-fonts-emoji
 ttf-dejavu
 ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
-ttf-font-awesome
+ttf-font-awesome-4
 

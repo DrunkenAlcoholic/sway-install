@@ -19,8 +19,10 @@ wpa_supplicant
 lm_sensors
 smartmontools
 # NimLaunch dependencies
-sdl2
-sdl2_ttf
+sdl2-compat
 sdl2_image
-p7zip
+sdl2_ttf
+# Zip Utils
+7zip
 zip
+unrar
