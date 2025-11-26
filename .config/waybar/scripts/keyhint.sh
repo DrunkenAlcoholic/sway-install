@@ -41,10 +41,12 @@ formatted="$title"$'\n'$"$divider"$'\n'$formatted
 formatted+=$'\n\n\033[2mPress q to close.\033[0m'
 
 tmp_file=$(mktemp)
+tmp_data_raw=$(mktemp)
 tmp_data=$(mktemp)
-trap 'rm -f "$tmp_file" "$tmp_data"' EXIT
+trap 'rm -f "$tmp_file" "$tmp_data_raw" "$tmp_data"' EXIT
 printf '%s\n' "$formatted" > "$tmp_file"
-make_rows | tail -n +2 > "$tmp_data"
+make_rows > "$tmp_data_raw"
+tail -n +2 "$tmp_data_raw" > "$tmp_data"
 
 if command -v yad >/dev/null 2>&1; then
     yad --title="Sway Keybindings" \
