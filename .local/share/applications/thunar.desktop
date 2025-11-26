@@ -1,15 +1,11 @@
 [Desktop Entry]
-Version=1.0
 Type=Application
 Name=Thunar
 Comment=Browse files and folders
 Exec=thunar %F
 TryExec=thunar
 Terminal=false
-StartupNotify=true
 Icon=Thunar
-Categories=System;Utility;Core;GTK;FileManager;
-MimeType=inode/directory;
-Keywords=files;file manager;folder;explore;
-NoDisplay=false
-StartupWMClass=Thunar
+Categories=Utility;Core;GTK;FileManager;
+MimeType=text/plain;
+StartupNotify=true
