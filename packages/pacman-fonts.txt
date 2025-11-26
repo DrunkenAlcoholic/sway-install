@@ -1,8 +1,7 @@
 # Fonts and glyph sets for the desktop environment
+ttf-jetbrains-mono-nerd
+ttf-iosevka-nerd
+ttf-dejavu-nerd
+ttf-meslo-nerd
 noto-fonts
 noto-fonts-emoji
-ttf-dejavu
-ttf-iosevka-nerd
-ttf-jetbrains-mono-nerd
-ttf-font-awesome-4
-
