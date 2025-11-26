@@ -238,6 +238,13 @@ write_theme_env() {
     "XCURSOR_SIZE=24"
     "QT_QPA_PLATFORMTHEME=gtk3"
     "GTK_USE_PORTAL=1"
+    "XDG_CURRENT_DESKTOP=sway"
+    "XDG_SESSION_DESKTOP=sway"
+    "XDG_SESSION_TYPE=wayland"
+    "QT_QPA_PLATFORM=wayland"
+    "SDL_VIDEODRIVER=wayland"
+    "CLUTTER_BACKEND=wayland"
+    "MOZ_ENABLE_WAYLAND=1"
   )
   local env_names=(
     GTK_THEME
@@ -245,6 +252,13 @@ write_theme_env() {
     XCURSOR_SIZE
     QT_QPA_PLATFORMTHEME
     GTK_USE_PORTAL
+    XDG_CURRENT_DESKTOP
+    XDG_SESSION_DESKTOP
+    XDG_SESSION_TYPE
+    QT_QPA_PLATFORM
+    SDL_VIDEODRIVER
+    CLUTTER_BACKEND
+    MOZ_ENABLE_WAYLAND
   )
   cat > "$env_dir/10-dracula.conf" <<'EOF'
 GTK_THEME=Dracula
@@ -252,6 +266,13 @@ XCURSOR_THEME=Bibata-Modern-Ice
 XCURSOR_SIZE=24
 QT_QPA_PLATFORMTHEME=gtk3
 GTK_USE_PORTAL=1
+XDG_CURRENT_DESKTOP=sway
+XDG_SESSION_DESKTOP=sway
+XDG_SESSION_TYPE=wayland
+QT_QPA_PLATFORM=wayland
+SDL_VIDEODRIVER=wayland
+CLUTTER_BACKEND=wayland
+MOZ_ENABLE_WAYLAND=1
 EOF
 
   command -v systemctl >/dev/null 2>&1 && \
@@ -344,6 +365,8 @@ EOF
 install_desktop_entries() {
   log_info "Installing desktop entries"
   install -Dm644 "$SCRIPT_DIR/.local/share/applications/helix-kitty.desktop" \
+    "$HOME/.local/share/applications/helix-kitty.desktop"
+  sed -i "s|^Icon=.*|Icon=$HOME/.local/share/icons/hicolor/scalable/apps/helix.svg|" \
     "$HOME/.local/share/applications/helix-kitty.desktop"
   install -Dm644 "$SCRIPT_DIR/.local/share/applications/thunar.desktop" \
     "$HOME/.local/share/applications/thunar.desktop"
