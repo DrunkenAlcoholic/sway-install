@@ -28,6 +28,12 @@ zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
+# Inline suggestions (fish-style)
+if [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+  ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+fi
+
 # History
 HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
 HISTSIZE=50000

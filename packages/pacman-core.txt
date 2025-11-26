@@ -8,3 +8,4 @@ unzip
 rsync
 fontconfig
 zsh
+zsh-autosuggestions
