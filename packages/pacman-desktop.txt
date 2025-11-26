@@ -4,6 +4,10 @@ qt5-graphicaleffects
 qt5-svg
 qt5-quickcontrols2
 qt5-wayland
+qt6-graphicaleffects
+qt6-svg
+qt6-quickcontrols2
+qt6-wayland
 sway
 swaylock
 swayidle
@@ -21,6 +25,7 @@ grim
 slurp
 swappy
 mako
+imv
 brightnessctl
 playerctl
 pavucontrol
@@ -49,3 +54,4 @@ xdg-user-dirs
 xdg-utils
 xdg-desktop-portal-wlr
 xdg-desktop-portal-gtk
+gvfs-smb

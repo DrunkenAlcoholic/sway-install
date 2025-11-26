@@ -22,3 +22,5 @@ smartmontools
 sdl2
 sdl2_ttf
 sdl2_image
+p7zip
+zip

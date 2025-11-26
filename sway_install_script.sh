@@ -6,11 +6,11 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- palette ---------------------------------------------------------------
-PURPLE=$'\033[38;2;189;147;249m'
-GREEN=$'\033[38;2;80;250;123m'
-YELLOW=$'\033[38;2;241;250;140m'
-RED=$'\033[38;2;255;85;85m'
+# --- palette (16-color friendly) ------------------------------------------
+PURPLE=$'\033[95m'   # bright magenta
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+RED=$'\033[31m'
 NC=$'\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
