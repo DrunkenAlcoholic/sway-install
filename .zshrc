@@ -59,10 +59,10 @@ zstyle ':vcs_info:*' enable git
 zstyle ':vcs_info:git*' formats '%b%u'
 
 _dracula_precmd() {
-  local status=$?
+  local exit_status=$?
   vcs_info
   local status_color="%F{green}"
-  [[ $status -ne 0 ]] && status_color="%F{red}"
+  [[ $exit_status -ne 0 ]] && status_color="%F{red}"
 
   local user_color="%F{magenta}"
   [[ $EUID -eq 0 ]] && user_color="%F{red}"
