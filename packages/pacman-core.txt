@@ -5,3 +5,5 @@ wget
 curl
 openssh
 unzip
+rsync
+fontconfig

@@ -12,13 +12,14 @@ Run the official Arch installer (`archinstall`) and make sure these options are 
 - Profile: `minimal`
 - Applications -> Audio: `pipewire`
 - Network configuration: `Copy ISO network configuration to installation`
-- Additional packages: `git` or install git before running the script.
+- Additional packages: `git` (needed only to clone this repo).
 
 After installation finishes and you reboot into the new system, create a regular user with sudo privileges (if `archinstall` has not already done that) and sign in before running the script below.
+You need working internet for package installs.
 
 ## Usage
 
-1. Ensure `git` is available and clone the repository:
+1. If git is missing, install it and clone the repository:
 
    ```bash
    sudo pacman -S --needed git
@@ -50,6 +51,7 @@ The installer must not be run as root; it prompts for your sudo password wheneve
 - Reboot after the script completes so SDDM and the configured services start cleanly.
 - When Sway starts, basic key bindings include `Super+Enter` (Kitty terminal), `Super+D` (NimLaunch), `Super+B` (Brave browser), `Super+N` (Thunar file manager), `Super+Shift+I` (keybinding helper), `Super+Shift+Q` (close window), and `Super+Shift+E` (exit Sway).
 - Cursor theming: the script installs Bibata and writes `~/.icons/default/index.theme` so the cursor is consistent across GTK, Qt, and Wayland applications.
+- The keybinding helper shows a GUI if `yad` is available (installed by default); it falls back to a terminal view otherwise.
 
 ## Troubleshooting
 

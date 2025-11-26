@@ -64,14 +64,6 @@ require_environment() {
     log_err "pacman not found. This script targets Arch Linux."
     exit 1
   fi
-  local missing=()
-  for cmd in sudo git rsync fc-cache; do
-    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
-  done
-  if ((${#missing[@]})); then
-    log_err "Missing required tools: ${missing[*]}"
-    exit 1
-  fi
 }
 
 confirm_run() {
@@ -81,13 +73,13 @@ confirm_run() {
   fi
 
   while true; do
-    read -r -p "Proceed with Sway installation? [y/N]: " reply || {
+    read -r -p "Proceed with Sway installation? [Y/n]: " reply || {
       log_warn "No input received; aborting."
       exit 0
     }
     case ${reply} in
-      [Yy]*) return ;;
-      [Nn]*|"") log_warn "Installation cancelled."; exit 0 ;;
+      [Yy]*|"") return ;;
+      [Nn]*) log_warn "Installation cancelled."; exit 0 ;;
       *) log_warn "Please answer y or n." ;;
     esac
   done

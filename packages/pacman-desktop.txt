@@ -24,7 +24,6 @@ mako
 brightnessctl
 playerctl
 pavucontrol
-gtk-engine-murrine
 dconf
 gammastep
 power-profiles-daemon
@@ -42,6 +41,7 @@ gvfs-afc
 libnotify
 polkit
 polkit-gnome
+yad
 gtk3
 qt5ct
 lxappearance

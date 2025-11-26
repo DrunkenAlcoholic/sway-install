@@ -8,7 +8,6 @@ ripgrep
 zoxide
 bat
 eza
-rsync
 tree
 zathura
 zathura-pdf-mupdf
